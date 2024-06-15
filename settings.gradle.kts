@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "Gestures Remote"
 include(":appclient")
 include(":appserver")
+include(":settings")

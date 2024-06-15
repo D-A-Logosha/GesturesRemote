@@ -2,6 +2,8 @@ package com.example.appserver
 
 import android.app.Application
 import com.example.appserver.ui.ServerViewModel
+import com.example.settings.SettingsRepository
+import com.example.settings.SharedPreferencesSettingsRepository
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -21,5 +23,6 @@ class AppServer : Application() {
 
     private val appModule = module {
         viewModel { ServerViewModel() }
+        single<SettingsRepository> { SharedPreferencesSettingsRepository() }
     }
 }
