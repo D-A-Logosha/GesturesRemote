@@ -10,10 +10,11 @@ import androidx.compose.ui.Modifier
 import com.example.appclient.ui.ClientViewModel
 import com.example.appclient.ui.HomeScreen
 import com.example.appclient.ui.theme.GesturesRemoteTheme
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel = ClientViewModel()
+    private val viewModel: ClientViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
