@@ -19,14 +19,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.appserver.R
+import com.example.appserver.data.KtorWebSocketServer
 import com.example.appserver.ui.theme.GesturesRemoteTheme
 import com.example.settings.FakeSettingsRepository
-import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: ServerViewModel = koinViewModel(),
+    viewModel: ServerViewModel,
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -80,7 +80,8 @@ fun HomeScreenPreview() {
     GesturesRemoteTheme {
         HomeScreen(
             viewModel = ServerViewModel(
-                settingsRepository = FakeSettingsRepository()
+                settingsRepository = FakeSettingsRepository(),
+                webSocketServer = KtorWebSocketServer(),
             )
         )
     }

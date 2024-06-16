@@ -4,10 +4,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.appclient.data.WebSocketClient
 import com.example.settings.SettingsRepository
+import kotlinx.coroutines.launch
 
 class ClientViewModel(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val webSocketClient: WebSocketClient,
 ) : ViewModel() {
 
     var clientUiState by mutableStateOf(getInitialClientUiState())
@@ -26,11 +30,21 @@ class ClientViewModel(
     }
 
     fun onConfigClick() {
-
     }
 
     fun onStartPauseClick() {
-        clientUiState = clientUiState.copy(isClientRun = !clientUiState.isClientRun)
+        viewModelScope.launch {
+            if (!clientUiState.isClientRun) {
+                webSocketClient.connect(
+                    ipAddress = clientUiState.ipAddress,
+                    port = clientUiState.port
+                )
+                clientUiState = clientUiState.copy(isClientRun = true)
+            } else {
+                webSocketClient.disconnect()
+                clientUiState = clientUiState.copy(isClientRun = false)
+            }
+        }
     }
 
     fun onSaveSettings(newIpAddress: String, newPort: String) {

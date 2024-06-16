@@ -1,6 +1,9 @@
 package com.example.appclient
 
 import android.app.Application
+import com.example.appclient.data.KtorWebSocketClient
+import com.example.appclient.data.WebSocketClient
+import com.example.appclient.data.httpClientModule
 import com.example.appclient.ui.ClientViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository
@@ -22,7 +25,9 @@ class AppClient : Application() {
     }
 
     private val appModule = module {
-        viewModel { ClientViewModel(get()) }
+        viewModel { ClientViewModel(get(), get()) }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
-    }
+        single<WebSocketClient> { KtorWebSocketClient() }
+    } + httpClientModule
+
 }

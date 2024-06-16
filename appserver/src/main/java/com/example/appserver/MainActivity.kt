@@ -21,6 +21,7 @@ class MainActivity : ComponentActivity() {
             GesturesRemoteTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     HomeScreen(
+                        viewModel = koinViewModel(),
                         modifier = Modifier.padding(innerPadding),
                     )
                 }

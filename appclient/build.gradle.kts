@@ -76,4 +76,8 @@ dependencies {
     implementation (libs.koin.androidx.compose)
     implementation (libs.koin.annotations)
     ksp (libs.koin.ksp.compiler)
+
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.websockets)
 }

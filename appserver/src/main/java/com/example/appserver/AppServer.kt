@@ -1,6 +1,8 @@
 package com.example.appserver
 
 import android.app.Application
+import com.example.appserver.data.KtorWebSocketServer
+import com.example.appserver.data.WebSocketServer
 import com.example.appserver.ui.ServerViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository
@@ -22,7 +24,8 @@ class AppServer : Application() {
     }
 
     private val appModule = module {
-        viewModel { ServerViewModel(get()) }
+        viewModel { ServerViewModel(get(), get()) }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
+        single<WebSocketServer> { KtorWebSocketServer() }
     }
 }
