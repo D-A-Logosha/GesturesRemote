@@ -5,10 +5,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.appclient.ui.theme.GesturesRemoteTheme
+import com.example.settings.ValidationUtils
 
 @Composable
 fun SettingsDialog(
@@ -19,6 +21,8 @@ fun SettingsDialog(
 ) {
     var ipAddress by remember { mutableStateOf(initialIpAddress) }
     var port by remember { mutableStateOf(initialPort) }
+    var isIpAddressValid by remember { mutableStateOf(ValidationUtils.isValidIpAddress(ipAddress)) }
+    var isPortValid by remember { mutableStateOf(ValidationUtils.isValidPort(port)) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -27,23 +31,49 @@ fun SettingsDialog(
             Column {
                 OutlinedTextField(
                     value = ipAddress,
-                    onValueChange = { ipAddress = it },
+                    onValueChange = {
+                        ipAddress = it
+                        isIpAddressValid = ValidationUtils.isValidIpAddress(it)
+                    },
                     label = { Text("IP Address") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    isError = !isIpAddressValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = {
+                        if (!isIpAddressValid) {
+                            Text(
+                                text = "Invalid IP Address",
+                                color = Color.Red
+                            )
+                        }
+                    },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = port,
-                    onValueChange = { port = it },
+                    onValueChange = {
+                        port = it
+                        isPortValid = ValidationUtils.isValidPort(it)
+                    },
                     label = { Text("Port") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    isError = !isPortValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = {
+                        if (!isPortValid) {
+                            Text(
+                                text = "Invalid Port. Port must be between 1 and 65535",
+                                color = Color.Red
+                            )
+                        }
+                    },
                 )
             }
         },
         confirmButton = {
             Button(onClick = {
-                onSettingsConfirm(ipAddress, port)
-                onDismissRequest()
+                if (isIpAddressValid && isPortValid) {
+                    onSettingsConfirm(ipAddress, port)
+                    onDismissRequest()
+                }
             }) {
                 Text("Save")
             }

@@ -11,9 +11,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.appserver.ui.theme.GesturesRemoteTheme
+import com.example.settings.ValidationUtils
 
 @Composable
 fun SettingsDialog(
@@ -22,6 +24,7 @@ fun SettingsDialog(
     onDismissRequest: () -> Unit
 ) {
     var port by remember { mutableStateOf(initialPort) }
+    var isPortValid by remember { mutableStateOf(ValidationUtils.isValidPort(port)) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -30,16 +33,30 @@ fun SettingsDialog(
             Column {
                 OutlinedTextField(
                     value = port,
-                    onValueChange = { port = it },
+                    onValueChange = {
+                        port = it
+                        isPortValid = ValidationUtils.isValidPort(it)
+                    },
                     label = { Text("Port") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    isError = !isPortValid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = {
+                        if (!isPortValid) {
+                            Text(
+                                text = "Invalid Port. Port must be between 1 and 65535",
+                                color = Color.Red
+                            )
+                        }
+                    },
                 )
             }
         },
         confirmButton = {
             Button(onClick = {
-                onSettingsConfirm(port)
-                onDismissRequest()
+                if (isPortValid) {
+                    onSettingsConfirm(port)
+                    onDismissRequest()
+                }
             }) {
                 Text("Save")
             }
