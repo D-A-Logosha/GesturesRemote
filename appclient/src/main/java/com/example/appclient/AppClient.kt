@@ -22,7 +22,7 @@ class AppClient : Application() {
     }
 
     private val appModule = module {
-        viewModel { ClientViewModel() }
+        viewModel { ClientViewModel(get()) }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
     }
 }

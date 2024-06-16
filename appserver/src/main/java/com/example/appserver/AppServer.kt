@@ -22,7 +22,7 @@ class AppServer : Application() {
     }
 
     private val appModule = module {
-        viewModel { ServerViewModel() }
+        viewModel { ServerViewModel(get()) }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
     }
 }

@@ -7,14 +7,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import com.example.appclient.ui.ClientViewModel
 import com.example.appclient.ui.HomeScreen
 import com.example.appclient.ui.theme.GesturesRemoteTheme
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.androidx.compose.koinViewModel
 
 class MainActivity : ComponentActivity() {
-
-    private val viewModel: ClientViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,7 +19,6 @@ class MainActivity : ComponentActivity() {
             GesturesRemoteTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     HomeScreen(
-                        viewModel = viewModel,
                         modifier = Modifier.padding(innerPadding),
                     )
                 }

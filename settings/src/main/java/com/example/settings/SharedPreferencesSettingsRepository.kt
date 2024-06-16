@@ -19,9 +19,16 @@ class SharedPreferencesSettingsRepository: SettingsRepository, KoinComponent {
 
     override fun getServerPort(): Int = prefs.getInt(KEY_SERVER_PORT, 0)
 
-    override fun saveSettings(ipAddress: String, port: Int) {
+    override fun saveClientSettings(ipAddress: String, port: Int) {
         prefs.edit().apply {
             putString(KEY_IP_ADDRESS, ipAddress)
+            putInt(KEY_SERVER_PORT, port)
+            apply()
+        }
+    }
+
+    override fun saveServerSettings(port: Int) {
+        prefs.edit().apply {
             putInt(KEY_SERVER_PORT, port)
             apply()
         }

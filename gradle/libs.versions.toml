@@ -41,7 +41,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-core = { module = "io.insert-koin:koin-core" }
 koin-android = { module = "io.insert-koin:koin-android" }
-koin-compat = { module = "io.insert-koin:koin-android-compat" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koinAnnotations" }
 koin-ksp-compiler = { module = "io.insert-koin:koin-ksp-compiler", version.ref = "koinAnnotations" }
 

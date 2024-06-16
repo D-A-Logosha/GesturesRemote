@@ -10,11 +10,10 @@ import androidx.compose.ui.Modifier
 import com.example.appserver.ui.HomeScreen
 import com.example.appserver.ui.ServerViewModel
 import com.example.appserver.ui.theme.GesturesRemoteTheme
+import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
-
-    private val viewModel: ServerViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,7 +21,6 @@ class MainActivity : ComponentActivity() {
             GesturesRemoteTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     HomeScreen(
-                        viewModel = viewModel,
                         modifier = Modifier.padding(innerPadding),
                     )
                 }
