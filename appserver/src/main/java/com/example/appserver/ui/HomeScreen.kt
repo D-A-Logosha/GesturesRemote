@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -78,19 +79,31 @@ fun HomeScreen(
                     color = statusColor,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { showDialog = true }) {
+                Button(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.width(buttonWidth.dp),
+                ) {
                     Text("Config")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { viewModel.onStartClick() }) {
+                Button(
+                    onClick = { viewModel.onStartClick() },
+                    modifier = Modifier.width(buttonWidth.dp),
+                ) {
                     Text("Start")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { viewModel.onStopClick() }) {
+                Button(
+                    onClick = { viewModel.onStopClick() },
+                    modifier = Modifier.width(buttonWidth.dp),
+                ) {
                     Text("Stop")
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { viewModel.onLogsClick() }) {
+                Button(
+                    onClick = { viewModel.onLogsClick() },
+                    modifier = Modifier.width(buttonWidth.dp),
+                ) {
                     Text("Logs")
                 }
             }
