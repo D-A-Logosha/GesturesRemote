@@ -65,7 +65,7 @@ class KtorWebSocketServer : WebSocketServer {
 
                             launch {
                                 while (true) {
-                                    delay(3333L)
+                                    delay(999L)
                                     send(Frame.Text("server message"))
                                 }
                             }
