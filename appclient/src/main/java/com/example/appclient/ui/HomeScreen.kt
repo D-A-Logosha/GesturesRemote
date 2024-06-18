@@ -37,7 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.appclient.R
-import com.example.appclient.data.KtorWebSocketClient
+import com.example.appclient.data.websocket.KtorWebSocketClient
 import com.example.appclient.ui.theme.GesturesRemoteTheme
 import com.example.settings.FakeSettingsRepository
 import kotlinx.coroutines.launch

@@ -1,4 +1,4 @@
-package com.example.appclient.data
+package com.example.appclient.data.websocket
 
 import android.util.Log
 import io.ktor.client.*

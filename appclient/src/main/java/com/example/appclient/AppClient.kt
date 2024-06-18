@@ -1,9 +1,9 @@
 package com.example.appclient
 
 import android.app.Application
-import com.example.appclient.data.KtorWebSocketClient
-import com.example.appclient.data.WebSocketClient
-import com.example.appclient.data.httpClientModule
+import com.example.appclient.data.websocket.KtorWebSocketClient
+import com.example.appclient.data.websocket.WebSocketClient
+import com.example.appclient.data.websocket.httpClientModule
 import com.example.appclient.ui.ClientViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository

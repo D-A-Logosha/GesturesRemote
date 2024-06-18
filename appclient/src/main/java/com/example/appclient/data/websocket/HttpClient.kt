@@ -1,4 +1,4 @@
-package com.example.appclient.data
+package com.example.appclient.data.websocket
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*

@@ -6,8 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.appclient.data.ClientWebSocketEvent
-import com.example.appclient.data.WebSocketClient
+import com.example.appclient.data.websocket.ClientWebSocketEvent
+import com.example.appclient.data.websocket.WebSocketClient
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
