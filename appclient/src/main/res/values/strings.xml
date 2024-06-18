@@ -2,4 +2,5 @@
     <string name="app_name">appclient</string>
 
     <string name="accessibility_service_label">GestureAccessibilityService</string>
+    <string name="accessibility_service_description">This service is used to perform gestures in Google Chrome. Gestures are transmitted by a remote server that the client connects to.</string>
 </resources>
