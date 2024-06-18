@@ -37,16 +37,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.appclient.R
-import com.example.appclient.data.websocket.KtorWebSocketClient
+import com.example.appclient.ui.preview.FakeClientViewModel
 import com.example.appclient.ui.theme.GesturesRemoteTheme
-import com.example.settings.FakeSettingsRepository
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    viewModel: ClientViewModel = koinViewModel(),
+    viewModel: ClientViewModelInterface = koinViewModel<ClientViewModel>(),
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -158,6 +157,6 @@ fun CustomSnackbar(
 @Composable
 fun HomeScreenPreview() {
     GesturesRemoteTheme {
-        HomeScreen()
+        HomeScreen(viewModel = FakeClientViewModel())
     }
 }

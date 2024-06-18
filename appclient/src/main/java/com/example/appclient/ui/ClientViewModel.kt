@@ -17,12 +17,12 @@ class ClientViewModel(
     private val settingsRepository: SettingsRepository,
     private val webSocketClient: WebSocketClient,
     private val accessibilityManager: GestureAccessibilityManager
-) : ViewModel() {
+) : ViewModel(), ClientViewModelInterface {
 
-    var clientUiState by mutableStateOf(getInitialClientUiState())
+    override var clientUiState by mutableStateOf(getInitialClientUiState())
         private set
 
-    var snackbarMessage = MutableSharedFlow<String>(replay = 0)
+    override var snackbarMessage = MutableSharedFlow<String>(replay = 0)
         private set
 
 
@@ -77,10 +77,10 @@ class ClientViewModel(
         }
     }
 
-    fun onConfigClick() {
+    override fun onConfigClick() {
     }
 
-    fun onStartPauseClick() {
+    override fun onStartPauseClick() {
         when (clientUiState.clientState) {
             ClientState.Stopped -> {
                 if (accessibilityManager.isServiceEnabled()) {
@@ -102,7 +102,7 @@ class ClientViewModel(
         }
     }
 
-    fun onSaveSettings(newIpAddress: String, newPort: String) {
+    override fun onSaveSettings(newIpAddress: String, newPort: String) {
         clientUiState = clientUiState.copy(ipAddress = newIpAddress, port = newPort)
         settingsRepository.saveClientSettings(
             clientUiState.ipAddress, clientUiState.port.toInt()
