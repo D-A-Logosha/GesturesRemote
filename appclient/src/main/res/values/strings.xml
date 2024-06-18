@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">appclient</string>
+
+    <string name="accessibility_service_label">GestureAccessibilityService</string>
 </resources>

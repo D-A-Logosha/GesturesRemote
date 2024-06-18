@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
+import com.example.appclient.domain.GestureAccessibilityManager
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 class ClientViewModel(
     private val settingsRepository: SettingsRepository,
     private val webSocketClient: WebSocketClient,
+    private val accessibilityManager: GestureAccessibilityManager
 ) : ViewModel() {
 
     var clientUiState by mutableStateOf(getInitialClientUiState())
@@ -39,7 +41,7 @@ class ClientViewModel(
         }
     }
 
-    private fun sendSnackbarMessage (message: String) {
+    private fun sendSnackbarMessage(message: String) {
         viewModelScope.launch {
             snackbarMessage.emit(message)
         }
@@ -81,10 +83,14 @@ class ClientViewModel(
     fun onStartPauseClick() {
         when (clientUiState.clientState) {
             ClientState.Stopped -> {
-                clientUiState = clientUiState.copy(clientState = ClientState.Starting)
-                webSocketClient.connect(
-                    ipAddress = clientUiState.ipAddress, port = clientUiState.port
-                )
+                if (accessibilityManager.isServiceEnabled()) {
+                    clientUiState = clientUiState.copy(clientState = ClientState.Starting)
+                    webSocketClient.connect(
+                        ipAddress = clientUiState.ipAddress, port = clientUiState.port
+                    )
+                } else {
+                    sendSnackbarMessage("Accessibility Service is not enabled")
+                }
             }
 
             ClientState.Started -> {

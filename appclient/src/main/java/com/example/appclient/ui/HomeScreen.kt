@@ -158,11 +158,6 @@ fun CustomSnackbar(
 @Composable
 fun HomeScreenPreview() {
     GesturesRemoteTheme {
-        HomeScreen(
-            viewModel = ClientViewModel(
-                settingsRepository = FakeSettingsRepository(),
-                webSocketClient = KtorWebSocketClient()
-            )
-        )
+        HomeScreen()
     }
 }

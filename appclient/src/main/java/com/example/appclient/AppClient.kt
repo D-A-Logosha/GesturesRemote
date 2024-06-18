@@ -1,9 +1,11 @@
 package com.example.appclient
 
 import android.app.Application
+import com.example.appclient.data.accessibility.AndroidAccessibilityManager
 import com.example.appclient.data.websocket.KtorWebSocketClient
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.data.websocket.httpClientModule
+import com.example.appclient.domain.GestureAccessibilityManager
 import com.example.appclient.ui.ClientViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository
@@ -25,9 +27,10 @@ class AppClient : Application() {
     }
 
     private val appModule = module {
-        viewModel { ClientViewModel(get(), get()) }
+        viewModel { ClientViewModel(get(), get(), get()) }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
         single<WebSocketClient> { KtorWebSocketClient() }
+        single<GestureAccessibilityManager> { AndroidAccessibilityManager(androidContext()) }
     } + httpClientModule
 
 }
