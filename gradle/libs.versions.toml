@@ -58,4 +58,4 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlinAndroidKsp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
+kotlin-android-ksp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
