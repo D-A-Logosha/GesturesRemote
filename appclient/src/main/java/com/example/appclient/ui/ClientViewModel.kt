@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
 import com.example.common.domain.GestureData
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
@@ -17,12 +18,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.koin.core.annotation.Scope
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import org.koin.core.parameter.parametersOf
 
+@Scope
 class ClientViewModel(
     private val settingsRepository: SettingsRepository,
     private val webSocketClient: WebSocketClient,
-    private val gestureServiceManager: GestureServiceManager
-) : ViewModel(), ClientViewModelInterface {
+    private val gestureServiceManager: GestureServiceManager,
+) : ViewModel(), ClientViewModelInterface, KoinComponent {
+
+    private val sendSwipeAreaUseCase: SendSwipeAreaUseCase by inject(parameters = { parametersOf(viewModelScope) })
 
     override var clientUiState by mutableStateOf(getInitialClientUiState())
         private set
@@ -59,18 +67,21 @@ class ClientViewModel(
                         clientUiState = clientUiState.copy(clientState = ClientState.Started)
                         Log.d("ClientViewModel", "Event: Connected to server")
                         sendSnackbarMessage("Event: Connected to server")
+                        sendSwipeAreaUseCase.start()
                     }
 
                     is ClientWebSocketEvent.Disconnected -> {
                         clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
                         Log.d("ClientViewModel", "Event: Disconnected from server")
                         sendSnackbarMessage("Event: Disconnected from server")
+                        sendSwipeAreaUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.Error -> {
                         clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
                         Log.e("ClientViewModel", "Event: WebSocket error: ${event.error}")
                         sendSnackbarMessage("Event: WebSocket error: ${event.error}")
+                        sendSwipeAreaUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.MessageReceived -> {

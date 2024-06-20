@@ -15,26 +15,26 @@ import org.koin.core.annotation.Single
 @Single
 class GestureServiceController : GestureServiceManager, GestureServiceHandler {
 
-    private val _isServiceEnabled = MutableSharedFlow<Boolean>(replay = 0)
+    private val _isServiceEnabled = MutableSharedFlow<Boolean>(replay = 1)
     override val isServiceEnabled: SharedFlow<Boolean> = _isServiceEnabled.asSharedFlow()
     private var isServiceEnabledLocal = false
 
-    private val _isChromeVisibleToUser = MutableSharedFlow<Boolean>(replay = 0)
+    private val _isChromeVisibleToUser = MutableSharedFlow<Boolean>(replay = 1)
     override val isChromeVisibleToUser = _isChromeVisibleToUser.asSharedFlow()
     private var isChromeVisibleToUserLocal = false
 
-    private val _isChromeFocused = MutableSharedFlow<Boolean>(replay = 0)
+    private val _isChromeFocused = MutableSharedFlow<Boolean>(replay = 1)
     override val isChromeFocused: SharedFlow<Boolean> = _isChromeFocused.asSharedFlow()
     private var isChromeFocusedLocal = false
 
-    private val _chromeSwipeArea = MutableSharedFlow<SwipeArea>(replay = 0)
+    private val _chromeSwipeArea = MutableSharedFlow<SwipeArea>(replay = 1)
     override val chromeSwipeArea: SharedFlow<SwipeArea> = _chromeSwipeArea.asSharedFlow()
     private var chromeSwipeAreaLocal = SwipeArea()
 
-    private val _swipeCommand = MutableSharedFlow<GestureData>(replay = 0)
+    private val _swipeCommand = MutableSharedFlow<GestureData>(replay = 1)
     override val swipeCommand = _swipeCommand.asSharedFlow()
 
-    private val _openChrome = MutableSharedFlow<Boolean>(replay = 0)
+    private val _openChrome = MutableSharedFlow<Boolean>(replay = 1)
     override val openChrome = _openChrome.asSharedFlow()
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
