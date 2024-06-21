@@ -8,14 +8,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appserver.data.ServerWebSocketEvent
 import com.example.appserver.data.WebSocketServer
+import com.example.appserver.domain.usecase.GenerateGestureDataUseCase
+import com.example.common.domain.SerializableSwipeArea
+import com.example.common.domain.SwipeArea
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import org.koin.core.parameter.parametersOf
 
 class ServerViewModel(
     private val settingsRepository: SettingsRepository,
     private val webSocketServer: WebSocketServer,
-) : ViewModel() {
+) : ViewModel(), KoinComponent {
+
+    private val generateGestureDataUseCase: GenerateGestureDataUseCase by inject(parameters = {
+        parametersOf(
+            viewModelScope
+        )
+    })
 
     var serverUiState by mutableStateOf(getInitialServerUiState())
         private set
@@ -65,17 +78,32 @@ class ServerViewModel(
                         val msg = "Client disconnected: ${event.clientId}, reason: ${event.reason}"
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
+                        generateGestureDataUseCase.stop()
                     }
 
                     is ServerWebSocketEvent.MessageReceived -> {
                         val msg = "Message received from ${event.clientId}: ${event.message}"
                         Log.d("ServerViewModel", msg)
+                        if (event.message.startsWith("{") && event.message.endsWith("}")) {
+                            try {
+                                val swipeAreaJson =
+                                    Json.decodeFromString<SerializableSwipeArea>(event.message)
+                                generateGestureDataUseCase.start(SwipeArea(swipeAreaJson()))
+                            } catch (e: Exception) {
+                                Log.e(
+                                    "ServerViewModel",
+                                    "Error decoding swipe area: ${e.message}",
+                                    e
+                                )
+                            }
+                        }
                     }
 
                     is ServerWebSocketEvent.ServerStopped -> {
                         serverUiState = serverUiState.copy(serverState = ServerState.Stopped)
                         Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: ${event.message}")
+                        generateGestureDataUseCase.stop()
                     }
 
                     is ServerWebSocketEvent.WebSocketError -> {
