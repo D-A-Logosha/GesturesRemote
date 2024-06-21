@@ -4,6 +4,7 @@ import android.app.Application
 import com.example.appserver.data.KtorWebSocketServer
 import com.example.appserver.data.WebSocketServer
 import com.example.appserver.domain.usecase.GenerateGestureDataUseCase
+import com.example.appserver.domain.usecase.SendMessageUseCase
 import com.example.appserver.ui.ServerViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository
@@ -36,5 +37,6 @@ class AppServer : Application() {
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
         single<WebSocketServer> { KtorWebSocketServer() }
         factory { (parentScope: CoroutineScope) -> GenerateGestureDataUseCase(parentScope) }
+        factory { (parentScope: CoroutineScope) -> SendMessageUseCase(parentScope) }
     }
 }

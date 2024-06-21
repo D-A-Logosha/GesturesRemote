@@ -21,6 +21,7 @@ interface WebSocketServer {
     val eventsFlow: SharedFlow<ServerWebSocketEvent>
     fun start(port: String)
     fun stop()
+    fun send(message: String)
 }
 
 sealed class ServerWebSocketEvent {
@@ -43,6 +44,7 @@ class KtorWebSocketServer : WebSocketServer {
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var server: ApplicationEngine? = null
+    private var webSocketSession: DefaultWebSocketServerSession? = null
 
     override fun start(port: String) {
         coroutineScope.launch {
@@ -65,6 +67,7 @@ class KtorWebSocketServer : WebSocketServer {
                     }
                     routing {
                         webSocket("/echo") {
+                            webSocketSession = this
                             launch {
                                 while (isActive) {
                                     delay(999L)
@@ -79,8 +82,7 @@ class KtorWebSocketServer : WebSocketServer {
                                     if (frame is Frame.Text) {
                                         val text = frame.readText()
                                         Log.d(
-                                            "ServerWebSocket",
-                                            "Received from $clientId: $text"
+                                            "ServerWebSocket", "Received from $clientId: $text"
                                         )
                                         eventsFlow.emit(
                                             ServerWebSocketEvent.MessageReceived(
@@ -88,8 +90,7 @@ class KtorWebSocketServer : WebSocketServer {
                                             )
                                         )
                                     } else Log.d(
-                                        "ServerWebSocket",
-                                        "Received from $clientId: non-text frame"
+                                        "ServerWebSocket", "Received from $clientId: non-text frame"
                                     )
                                 }
                             } catch (e: Exception) {
@@ -143,6 +144,12 @@ class KtorWebSocketServer : WebSocketServer {
                 Log.e("ServerWebSocket", msg, e)
                 eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
             }
+        }
+    }
+
+    override fun send(message: String) {
+        coroutineScope.launch {
+            webSocketSession?.send(Frame.Text(message))
         }
     }
 }

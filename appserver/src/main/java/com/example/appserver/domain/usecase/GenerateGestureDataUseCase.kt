@@ -1,8 +1,8 @@
 package com.example.appserver.domain.usecase
 
-import android.graphics.Point
 import android.util.Log
 import com.example.common.domain.GestureData
+import com.example.common.domain.Point
 import com.example.common.domain.SwipeArea
 import com.example.common.domain.copy
 import kotlinx.coroutines.CoroutineScope

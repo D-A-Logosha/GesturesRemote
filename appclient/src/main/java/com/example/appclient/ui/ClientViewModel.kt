@@ -1,6 +1,5 @@
 package com.example.appclient.ui
 
-import android.graphics.Point
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +11,7 @@ import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.GestureServiceManager
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
 import com.example.common.domain.GestureData
+import com.example.common.domain.Point
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

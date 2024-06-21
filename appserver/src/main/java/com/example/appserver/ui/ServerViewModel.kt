@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.appserver.data.ServerWebSocketEvent
 import com.example.appserver.data.WebSocketServer
 import com.example.appserver.domain.usecase.GenerateGestureDataUseCase
+import com.example.appserver.domain.usecase.SendMessageUseCase
 import com.example.common.domain.SerializableSwipeArea
 import com.example.common.domain.SwipeArea
 import com.example.settings.SettingsRepository
@@ -25,9 +26,10 @@ class ServerViewModel(
 ) : ViewModel(), KoinComponent {
 
     private val generateGestureDataUseCase: GenerateGestureDataUseCase by inject(parameters = {
-        parametersOf(
-            viewModelScope
-        )
+        parametersOf(viewModelScope)
+    })
+    private val sendMessageUseCase: SendMessageUseCase by inject(parameters = {
+        parametersOf(viewModelScope)
     })
 
     var serverUiState by mutableStateOf(getInitialServerUiState())
@@ -79,6 +81,8 @@ class ServerViewModel(
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
                         generateGestureDataUseCase.stop()
+                        sendMessageUseCase.stop()
+
                     }
 
                     is ServerWebSocketEvent.MessageReceived -> {
@@ -89,11 +93,10 @@ class ServerViewModel(
                                 val swipeAreaJson =
                                     Json.decodeFromString<SerializableSwipeArea>(event.message)
                                 generateGestureDataUseCase.start(SwipeArea(swipeAreaJson()))
+                                sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
                             } catch (e: Exception) {
                                 Log.e(
-                                    "ServerViewModel",
-                                    "Error decoding swipe area: ${e.message}",
-                                    e
+                                    "ServerViewModel", "Error decoding swipe area: ${e.message}", e
                                 )
                             }
                         }
@@ -104,6 +107,7 @@ class ServerViewModel(
                         Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: ${event.message}")
                         generateGestureDataUseCase.stop()
+
                     }
 
                     is ServerWebSocketEvent.WebSocketError -> {
