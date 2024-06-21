@@ -7,6 +7,7 @@ import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.data.websocket.httpClientModule
 import com.example.appclient.domain.GestureServiceHandler
 import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.usecase.ExecuteGestureUseCase
 import com.example.appclient.domain.usecase.ReceiveGestureUseCase
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
 import com.example.appclient.ui.ClientViewModel
@@ -18,6 +19,7 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 class AppClient : Application() {
@@ -41,9 +43,9 @@ class AppClient : Application() {
         }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
         single<WebSocketClient> { KtorWebSocketClient() }
-        single<GestureServiceManager> { GestureServiceController() }
-        single<GestureServiceHandler> { get<GestureServiceManager>() }
+        single<GestureServiceManager> { GestureServiceController() } bind GestureServiceHandler::class
         factory { (parentScope: CoroutineScope) -> SendSwipeAreaUseCase(parentScope) }
         factory { (parentScope: CoroutineScope) -> ReceiveGestureUseCase(parentScope) }
+        factory { (parentScope: CoroutineScope) -> ExecuteGestureUseCase(parentScope) }
     } + httpClientModule
 }

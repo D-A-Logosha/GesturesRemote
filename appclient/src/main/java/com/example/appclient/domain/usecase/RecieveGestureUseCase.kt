@@ -33,7 +33,10 @@ class ReceiveGestureUseCase(
                             try {
                                 val gestureData = GestureData.fromJson(event.message)
                                 _receivedGestureFlow.emit(gestureData)
-                                Log.d("ReceiveGestureUseCase", "Received gesture: ${gestureData.toString()}")
+                                Log.d(
+                                    "ReceiveGestureUseCase",
+                                    "Received gesture: $gestureData"
+                                )
                             } catch (e: Exception) {
                                 Log.e(
                                     "ReceiveGestureUseCase",

@@ -6,11 +6,15 @@ import com.example.common.domain.GestureData
 import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @Single
 class GestureServiceController : GestureServiceManager, GestureServiceHandler {
@@ -34,41 +38,43 @@ class GestureServiceController : GestureServiceManager, GestureServiceHandler {
     private val _swipeCommand = MutableSharedFlow<GestureData>(replay = 1)
     override val swipeCommand = _swipeCommand.asSharedFlow()
 
-    private val _openChrome = MutableSharedFlow<Boolean>(replay = 1)
+    private val _openChrome = MutableSharedFlow<Unit>(replay = 1)
     override val openChrome = _openChrome.asSharedFlow()
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    override val openChromeResult = MutableSharedFlow<Boolean>(replay = 0)
+
+    private val coroutineScope = CoroutineScope(SupervisorJob())
 
     override fun onServiceStateChanged(isEnabled: Boolean) {
         isServiceEnabledLocal = isEnabled
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             _isServiceEnabled.emit(isEnabled)
         }
     }
 
     override fun onChromeVisibleToUserChanged(isChromeVisible: Boolean) {
         isChromeVisibleToUserLocal = isChromeVisible
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             _isChromeVisibleToUser.emit(isChromeVisible)
         }
     }
 
     override fun onChromeFocusedChanged(isChromeFocused: Boolean) {
         isChromeFocusedLocal = isChromeFocused
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             _isChromeFocused.emit(isChromeFocused)
         }
     }
 
     override fun onSwipeAreaChanged(swipeArea: SwipeArea) {
         chromeSwipeAreaLocal = swipeArea
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             _chromeSwipeArea.emit(swipeArea)
         }
     }
 
     override fun performSwipe(gesture: GestureData) {
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             _swipeCommand.emit(gesture)
         }
     }
@@ -79,9 +85,15 @@ class GestureServiceController : GestureServiceManager, GestureServiceHandler {
     override fun getChromeSwipeArea() = chromeSwipeAreaLocal
 
 
-    override fun openChrome() {
-        coroutineScope.launch {
-            _openChrome.emit(true)
+    override suspend fun openChrome(): Boolean {
+        return suspendCoroutine { continuation ->
+            coroutineScope.launch(Dispatchers.IO) {
+                _openChrome.emit(Unit)
+            }
+            coroutineScope.launch(Dispatchers.IO) {
+                val result = openChromeResult.first()
+                continuation.resume(result)
+            }
         }
     }
 }

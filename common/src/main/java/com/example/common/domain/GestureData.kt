@@ -13,6 +13,12 @@ data class GestureData(
     val end: Point,
     val duration: Long,
 ) : Parcelable {
+    constructor(gesture: GestureData) : this(
+        Point(gesture.start.x, gesture.start.y),
+        Point(gesture.end.x, gesture.end.y),
+        gesture.duration,
+    )
+
     fun toJson(): String = Json.encodeToString(this)
 
     companion object {

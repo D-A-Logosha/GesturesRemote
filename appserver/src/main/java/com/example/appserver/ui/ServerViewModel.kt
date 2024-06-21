@@ -13,6 +13,7 @@ import com.example.appserver.domain.usecase.SendMessageUseCase
 import com.example.common.domain.SerializableSwipeArea
 import com.example.common.domain.SwipeArea
 import com.example.settings.SettingsRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -54,13 +55,13 @@ class ServerViewModel(
     }
 
     private fun sendSnackbarMessage(message: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             snackbarMessage.emit(message)
         }
     }
 
     private fun observeWebSocketEvents() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             webSocketServer.eventsFlow.collect { event ->
                 when (event) {
                     is ServerWebSocketEvent.ServerStarted -> {

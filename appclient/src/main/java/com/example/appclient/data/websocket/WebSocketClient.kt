@@ -40,11 +40,11 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
 
     private var webSocketSession: DefaultClientWebSocketSession? = null
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(SupervisorJob())
     private var socketJob: Job? = null
 
     override fun connect(ipAddress: String, port: String) {
-        socketJob = coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             try {
                 httpClient.webSocket(
                     host = ipAddress,
@@ -67,7 +67,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                         when (frame) {
                             is Frame.Text -> {
                                 val text = frame.readText()
-                                Log.d("ClientWebSocket", "Received: $text")
+                                // Log.d("ClientWebSocket", "Received: $text")
                                 eventsFlow.emit(ClientWebSocketEvent.MessageReceived(message = text))
                             }
 
@@ -77,15 +77,17 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                         }
                     }
 
-                    launch {
+                    socketJob = coroutineScope.launch(Dispatchers.IO) {
                         while (isActive) {
                             val result = withTimeoutOrNull(3333L) {
                                 eventsFlow.first { it is ClientWebSocketEvent.MessageReceived }
                             }
                             if (result == null) {
-                                val timeoutException = Exception("Server timeout")
-                                eventsFlow.emit(ClientWebSocketEvent.Error(timeoutException))
-                                disconnect()
+                                socketJob?.let {
+                                    val timeoutException = Exception("Server timeout")
+                                    eventsFlow.emit(ClientWebSocketEvent.Error(timeoutException))
+                                    disconnect()
+                                }
                                 break
                             }
                         }
@@ -101,8 +103,9 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
     }
 
     override fun disconnect() {
-        socketJob = null
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
+            socketJob?.cancel()
+            socketJob = null
             try {
                 webSocketSession?.close(
                     CloseReason(
@@ -119,7 +122,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
     }
 
     override fun send(message: String) {
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             if (webSocketSession?.isActive == true) {
                 webSocketSession?.send(Frame.Text(message))
             }

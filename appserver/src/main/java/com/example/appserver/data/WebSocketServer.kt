@@ -41,13 +41,13 @@ class KtorWebSocketServer : WebSocketServer {
     override var eventsFlow = MutableSharedFlow<ServerWebSocketEvent>(replay = 0)
         private set
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(SupervisorJob())
 
     private var server: ApplicationEngine? = null
     private var webSocketSession: DefaultWebSocketServerSession? = null
 
     override fun start(port: String) {
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             try {
                 if (!isPortAvailable(port.toInt())) {
                     throw Exception("Port $port is already in use")
@@ -81,9 +81,7 @@ class KtorWebSocketServer : WebSocketServer {
                                 incoming.consumeEach { frame ->
                                     if (frame is Frame.Text) {
                                         val text = frame.readText()
-                                        Log.d(
-                                            "ServerWebSocket", "Received from $clientId: $text"
-                                        )
+                                       // Log.d("ServerWebSocket", "Received from $clientId: $text")
                                         eventsFlow.emit(
                                             ServerWebSocketEvent.MessageReceived(
                                                 clientId, text
@@ -130,7 +128,7 @@ class KtorWebSocketServer : WebSocketServer {
     }
 
     override fun stop() {
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             try {
                 Log.d("ServerWebSocket", "stopping")
                 server?.stop(1000L, 3333L)
@@ -148,7 +146,7 @@ class KtorWebSocketServer : WebSocketServer {
     }
 
     override fun send(message: String) {
-        coroutineScope.launch {
+        coroutineScope.launch(Dispatchers.IO) {
             webSocketSession?.send(Frame.Text(message))
         }
     }

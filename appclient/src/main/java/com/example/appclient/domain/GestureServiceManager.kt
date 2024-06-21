@@ -14,5 +14,5 @@ interface GestureServiceManager : GestureServiceHandler {
     val isChromeFocused: SharedFlow<Boolean>
     fun getChromeSwipeArea(): SwipeArea
     val chromeSwipeArea: SharedFlow<SwipeArea>
-    fun openChrome()
+    suspend fun openChrome(): Boolean
 }

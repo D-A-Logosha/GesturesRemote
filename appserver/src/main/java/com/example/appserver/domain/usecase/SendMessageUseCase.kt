@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.appserver.data.WebSocketServer
 import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -22,7 +23,7 @@ class SendMessageUseCase(
         if (job != null && job.isActive) {
             return job
         }
-        job = viewModelScope.launch {
+        job = viewModelScope.launch(Dispatchers.IO) {
             gestureDataFlow.collect { data ->
                 try {
                     Log.d("SendMessageUseCase", "Sending message: ${data.toJson()}")

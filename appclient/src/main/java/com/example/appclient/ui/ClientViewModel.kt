@@ -9,15 +9,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.usecase.ExecuteGestureUseCase
 import com.example.appclient.domain.usecase.ReceiveGestureUseCase
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
-import com.example.common.domain.GestureData
-import com.example.common.domain.Point
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Scope
 import org.koin.core.component.KoinComponent
@@ -35,6 +32,9 @@ class ClientViewModel(
         parametersOf(viewModelScope)
     })
     private val receiveGestureUseCase: ReceiveGestureUseCase by inject(parameters = {
+        parametersOf(viewModelScope)
+    })
+    private val executeGestureUseCase: ExecuteGestureUseCase by inject(parameters = {
         parametersOf(viewModelScope)
     })
 
@@ -60,13 +60,13 @@ class ClientViewModel(
     }
 
     private fun sendSnackbarMessage(message: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             snackbarMessage.emit(message)
         }
     }
 
     private fun observeWebSocketEvents() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             webSocketClient.eventsFlow.collect { event ->
                 when (event) {
                     is ClientWebSocketEvent.Connected -> {
@@ -75,6 +75,7 @@ class ClientViewModel(
                         sendSnackbarMessage("Event: Connected to server")
                         sendSwipeAreaUseCase.start()
                         receiveGestureUseCase.start()
+                        executeGestureUseCase.start(receiveGestureUseCase.receivedGestureFlow)
                     }
 
                     is ClientWebSocketEvent.Disconnected -> {
@@ -83,6 +84,7 @@ class ClientViewModel(
                         sendSnackbarMessage("Event: Disconnected from server")
                         sendSwipeAreaUseCase.stop()
                         receiveGestureUseCase.stop()
+                        executeGestureUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.Error -> {
@@ -91,10 +93,11 @@ class ClientViewModel(
                         sendSnackbarMessage("Event: WebSocket error: ${event.error}")
                         sendSwipeAreaUseCase.stop()
                         receiveGestureUseCase.stop()
+                        executeGestureUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.MessageReceived -> {
-                        Log.d("ClientViewModel", "Event: received: ${event.message}")
+                        // Log.d("ClientViewModel", "Event: received: ${event.message}")
                     }
                 }
             }
@@ -105,25 +108,30 @@ class ClientViewModel(
     }
 
     override fun onStartPauseClick() {
-        when (clientUiState.clientState) {
-            ClientState.Stopped -> {
-                if (gestureServiceManager.isServiceEnabled()) {
-                    clientUiState = clientUiState.copy(clientState = ClientState.Starting)
-                    webSocketClient.connect(
-                        ipAddress = clientUiState.ipAddress, port = clientUiState.port
-                    )
-                    startSwipes()
-                } else {
-                    sendSnackbarMessage("Accessibility Service is not enabled")
+        viewModelScope.launch(Dispatchers.IO) {
+            when (clientUiState.clientState) {
+                ClientState.Stopped -> {
+                    if (gestureServiceManager.isServiceEnabled()) {
+                        if (gestureServiceManager.openChrome()) {
+                            clientUiState = clientUiState.copy(clientState = ClientState.Starting)
+                            webSocketClient.connect(
+                                ipAddress = clientUiState.ipAddress, port = clientUiState.port
+                            )
+                        } else {
+                            sendSnackbarMessage("Chrome not found")
+                        }
+                    } else {
+                        sendSnackbarMessage("Accessibility Service is not enabled")
+                    }
                 }
-            }
 
-            ClientState.Started -> {
-                clientUiState = clientUiState.copy(clientState = ClientState.Stopping)
-                webSocketClient.disconnect()
-            }
+                ClientState.Started -> {
+                    clientUiState = clientUiState.copy(clientState = ClientState.Stopping)
+                    webSocketClient.disconnect()
+                }
 
-            else -> {}
+                else -> {}
+            }
         }
     }
 
@@ -132,44 +140,5 @@ class ClientViewModel(
         settingsRepository.saveClientSettings(
             clientUiState.ipAddress, clientUiState.port.toInt()
         )
-    }
-
-    private fun startSwipes() {
-        viewModelScope.launch(Dispatchers.IO) {
-            var isSwipeDown = true
-            while (isActive) {
-                if (!gestureServiceManager.isChromeFocused()) {
-                    var timeOut = true
-                    while (!gestureServiceManager.isChromeFocused()) {
-                        if (timeOut) {
-                            gestureServiceManager.openChrome()
-                            timeOut = false
-                            viewModelScope.launch(Dispatchers.IO) {
-                                delay(2222L)
-                                timeOut = true
-                            }
-                        }
-                    }
-                } else {
-                    val swipeArea = gestureServiceManager.getChromeSwipeArea()
-                    val swipe = if (isSwipeDown) "down" else "up"
-                    Log.d(
-                        "ClientViewModel",
-                        "ClientViewModel: swipe ${swipe}. Window size ${swipeArea.width()}x${swipeArea.height()}"
-                    )
-                    val x: Int = swipeArea.centerX()
-                    val h: Int = swipeArea.height() / 3
-
-                    val gesture = if (isSwipeDown) GestureData(
-                        Point(x, swipeArea.top + h), Point(x, swipeArea.bottom - h), 555L
-                    ) else GestureData(
-                        Point(x, swipeArea.bottom - h), Point(x, swipeArea.top + h), 555L
-                    )
-                    gestureServiceManager.performSwipe(gesture)
-                    isSwipeDown = !isSwipeDown
-                    delay(2222L)
-                }
-            }
-        }
     }
 }

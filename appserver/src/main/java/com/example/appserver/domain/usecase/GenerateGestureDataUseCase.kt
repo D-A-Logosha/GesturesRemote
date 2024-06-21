@@ -6,6 +6,7 @@ import com.example.common.domain.Point
 import com.example.common.domain.SwipeArea
 import com.example.common.domain.copy
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,13 +28,14 @@ class GenerateGestureDataUseCase(
     private var swipeAreaLocal: SwipeArea = SwipeArea()
 
     fun start(swipeArea: SwipeArea) {
-        swipeAreaLocal = when {
-            swipeArea.top < 128 && swipeArea.bottom > 256 -> swipeArea.copy(top = 128)
-            swipeArea.top < 128 -> swipeArea.copy(top = (swipeArea.top + swipeArea.bottom) / 2)
-            else -> swipeArea
-        }
+        swipeAreaLocal = swipeArea.copy(
+            top = (swipeArea.top+swipeArea.height()*0.2f).toInt(),
+            bottom = (swipeArea.bottom-swipeArea.height()*0.2f).toInt(),
+            left = (swipeArea.left+swipeArea.width()*0.2f).toInt(),
+            right = (swipeArea.right-swipeArea.width()*0.2f).toInt(),
+        )
         if (job != null) return
-        job = viewModelScope.launch {
+        job = viewModelScope.launch(Dispatchers.IO) {
             var isSwipeDown = true
             while (isActive) {
                 if (swipeAreaLocal.width() == 0 || swipeAreaLocal.height() == 0) {

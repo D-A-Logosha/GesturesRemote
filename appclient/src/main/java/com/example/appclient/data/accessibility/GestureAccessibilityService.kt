@@ -14,11 +14,14 @@ import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import org.koin.core.annotation.Single
 
+@Single
 class GestureAccessibilityService : AccessibilityService() {
 
     private val gestureServiceHandler: GestureServiceHandler by inject()
@@ -27,7 +30,7 @@ class GestureAccessibilityService : AccessibilityService() {
     private var isChromeFocused = false
     private var chromeSwipeArea = SwipeArea()
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(SupervisorJob())
     private var swipeJob: Job? = null
     private var openChromeJob: Job? = null
     private var monitorChromeJob: Job? = null
@@ -40,7 +43,7 @@ class GestureAccessibilityService : AccessibilityService() {
         gestureServiceHandler.onServiceStateChanged(true)
         openChromeJob = coroutineScope.launch(Dispatchers.IO) {
             gestureServiceHandler.openChrome.collect { _ ->
-                openChrome()
+                gestureServiceHandler.openChromeResult.emit(openChrome())
             }
         }
     }
@@ -58,13 +61,17 @@ class GestureAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        //Log.d("Accessibility", "Event: ${event.eventType}, package: ${event.packageName}")
+        // Log.d("Accessibility", "Event: ${event.eventType}, package: ${event.packageName}")
 
         if (event.packageName?.toString() == "com.android.chrome") {
             when (event.eventType) {
-                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> event.source?.let { monitorChromeState(it) }
+                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> event.source?.let {
+                    monitorChromeState(
+                        it
+                    )
+                }
 
-                AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> event.source?.let { monitorChromeState(it) }
+                //AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> event.source?.let { monitorChromeState(it) }
 
                 else -> {}
             }
@@ -76,7 +83,7 @@ class GestureAccessibilityService : AccessibilityService() {
     }
 
     private fun performSwipe(gesture: GestureData) {
-        Log.d("Accessibility", "Gesture starting")
+        Log.d("Accessibility", "Gesture starting: $gesture")
         val path = Path()
         path.moveTo(gesture.start.x.toFloat(), gesture.start.y.toFloat())
         path.lineTo(gesture.end.x.toFloat(), gesture.end.y.toFloat())
@@ -100,7 +107,7 @@ class GestureAccessibilityService : AccessibilityService() {
         if (monitorChromeJob != null) return
         monitorChromeJob = coroutineScope.launch(Dispatchers.IO) {
             while (isActive) {
-                val chromeNode = findChromeNode(rootInActiveWindow)
+                val chromeNode = findChromeNode()
                 if (chromeNode != null) {
                     if (isChromeVisibleToUser != chromeNode.isVisibleToUser) {
                         isChromeVisibleToUser = chromeNode.isVisibleToUser
@@ -116,6 +123,7 @@ class GestureAccessibilityService : AccessibilityService() {
                         chromeNode.getBoundsInScreen(chromeBounds)
                         if (chromeSwipeArea != chromeBounds) {
                             chromeSwipeArea = chromeBounds
+                            Log.d("Accessibility", "Chrome area changed: $chromeSwipeArea}")
                             gestureServiceHandler.onSwipeAreaChanged(chromeSwipeArea)
                         }
                         if (isChromeVisibleToUser && isChromeFocused) {
@@ -124,7 +132,7 @@ class GestureAccessibilityService : AccessibilityService() {
                                 startSwipes()
                             }
                         } else swipeJob?.run {
-                            Log.d("Accessibility", "monitorChromeJob stop")
+                            Log.d("Accessibility", "monitorChromeJob stop: chrome not visible")
                             stopSwipes()
                             monitorChromeJob?.cancel()
                             monitorChromeJob = null
@@ -138,18 +146,18 @@ class GestureAccessibilityService : AccessibilityService() {
                     chromeSwipeArea = SwipeArea()
                     gestureServiceHandler.onSwipeAreaChanged(chromeSwipeArea)
                     swipeJob?.run {
-                        Log.d("Accessibility", "monitorChromeJob stop")
+                        Log.d("Accessibility", "monitorChromeJob stop: chromeNode not found")
                         stopSwipes()
                         monitorChromeJob?.cancel()
                         monitorChromeJob = null
                     }
                 }
-                delay(111L)
+                delay(255L)
             }
         }
     }
 
-    private fun openChrome() {
+    private fun openChrome(): Boolean {
         val intent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
             setPackage("com.android.chrome")
@@ -157,13 +165,16 @@ class GestureAccessibilityService : AccessibilityService() {
         }
         try {
             applicationContext.startActivity(intent)
+            Log.d("ClientViewModel", "Open Chrome")
+            return true
         } catch (e: Exception) {
             Log.e("ClientViewModel", "Chrome not found", e)
+            return false
         }
     }
 
     private fun startSwipes() {
-        swipeJob = coroutineScope.launch(Dispatchers.IO) {
+        swipeJob = coroutineScope.launch(Dispatchers.Main) {
             gestureServiceHandler.swipeCommand.collect { gesture ->
                 performSwipe(gesture)
             }
@@ -186,8 +197,10 @@ class GestureAccessibilityService : AccessibilityService() {
         } else {
             for (i in 0 until rootNode.childCount) {
                 findChromeNode(rootNode.getChild(i))?.let {
-                    return if (it.isFocused && it.isVisibleToUser) it
-                    else null
+                    return if (it.isVisibleToUser) {
+                        if (it.isFocused) it
+                        else null
+                    } else null
                 }
             }
         }
