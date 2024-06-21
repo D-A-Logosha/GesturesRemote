@@ -7,6 +7,7 @@ import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.data.websocket.httpClientModule
 import com.example.appclient.domain.GestureServiceHandler
 import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.usecase.ReceiveGestureUseCase
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
 import com.example.appclient.ui.ClientViewModel
 import com.example.settings.SettingsRepository
@@ -43,5 +44,6 @@ class AppClient : Application() {
         single<GestureServiceManager> { GestureServiceController() }
         single<GestureServiceHandler> { get<GestureServiceManager>() }
         factory { (parentScope: CoroutineScope) -> SendSwipeAreaUseCase(parentScope) }
+        factory { (parentScope: CoroutineScope) -> ReceiveGestureUseCase(parentScope) }
     } + httpClientModule
 }

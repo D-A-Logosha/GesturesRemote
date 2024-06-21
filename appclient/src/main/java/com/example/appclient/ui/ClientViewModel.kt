@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.usecase.ReceiveGestureUseCase
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
 import com.example.common.domain.GestureData
 import com.example.common.domain.Point
@@ -30,7 +31,12 @@ class ClientViewModel(
     private val gestureServiceManager: GestureServiceManager,
 ) : ViewModel(), ClientViewModelInterface, KoinComponent {
 
-    private val sendSwipeAreaUseCase: SendSwipeAreaUseCase by inject(parameters = { parametersOf(viewModelScope) })
+    private val sendSwipeAreaUseCase: SendSwipeAreaUseCase by inject(parameters = {
+        parametersOf(viewModelScope)
+    })
+    private val receiveGestureUseCase: ReceiveGestureUseCase by inject(parameters = {
+        parametersOf(viewModelScope)
+    })
 
     override var clientUiState by mutableStateOf(getInitialClientUiState())
         private set
@@ -68,6 +74,7 @@ class ClientViewModel(
                         Log.d("ClientViewModel", "Event: Connected to server")
                         sendSnackbarMessage("Event: Connected to server")
                         sendSwipeAreaUseCase.start()
+                        receiveGestureUseCase.start()
                     }
 
                     is ClientWebSocketEvent.Disconnected -> {
@@ -75,6 +82,7 @@ class ClientViewModel(
                         Log.d("ClientViewModel", "Event: Disconnected from server")
                         sendSnackbarMessage("Event: Disconnected from server")
                         sendSwipeAreaUseCase.stop()
+                        receiveGestureUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.Error -> {
@@ -82,6 +90,7 @@ class ClientViewModel(
                         Log.e("ClientViewModel", "Event: WebSocket error: ${event.error}")
                         sendSnackbarMessage("Event: WebSocket error: ${event.error}")
                         sendSwipeAreaUseCase.stop()
+                        receiveGestureUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.MessageReceived -> {

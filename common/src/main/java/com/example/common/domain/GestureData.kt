@@ -22,7 +22,7 @@ data class GestureData(
 
 @Parcelize
 @Serializable
-public class Point(
+data class Point(
     val x: Int,
     val y: Int,
 ) : Parcelable
