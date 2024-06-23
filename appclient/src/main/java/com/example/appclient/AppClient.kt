@@ -5,8 +5,8 @@ import com.example.appclient.data.accessibility.GestureServiceController
 import com.example.appclient.data.websocket.KtorWebSocketClient
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.data.websocket.httpClientModule
-import com.example.appclient.domain.GestureServiceHandler
-import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.interfaces.GestureServiceHandler
+import com.example.appclient.domain.interfaces.GestureServiceManager
 import com.example.appclient.domain.usecase.ExecuteGestureUseCase
 import com.example.appclient.domain.usecase.ReceiveGestureUseCase
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase

@@ -1,26 +1,36 @@
 package com.example.appclient.data.accessibility
 
-import com.example.appclient.domain.GestureServiceHandler
-import com.example.appclient.domain.GestureServiceManager
+import android.util.Log
+import com.example.appclient.domain.interfaces.GestureServiceHandler
+import com.example.appclient.domain.interfaces.GestureServiceManager
+import com.example.appclient.domain.interfaces.PerformedGesturesProvider
 import com.example.common.domain.GestureData
+import com.example.common.domain.GestureResult
+import com.example.common.domain.PerformedGesture
 import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @Single
-class GestureServiceController : GestureServiceManager, GestureServiceHandler {
+class GestureServiceController : GestureServiceManager, GestureServiceHandler,
+    PerformedGesturesProvider {
 
-    private val _isServiceEnabled = MutableSharedFlow<Boolean>(replay = 1)
-    override val isServiceEnabled: SharedFlow<Boolean> = _isServiceEnabled.asSharedFlow()
+    private val _isServiceEnabled = MutableStateFlow(false)
+    override val isServiceEnabled: StateFlow<Boolean> = _isServiceEnabled.asStateFlow()
+
     private var isServiceEnabledLocal = false
 
     private val _isChromeVisibleToUser = MutableSharedFlow<Boolean>(replay = 1)
@@ -47,9 +57,7 @@ class GestureServiceController : GestureServiceManager, GestureServiceHandler {
 
     override fun onServiceStateChanged(isEnabled: Boolean) {
         isServiceEnabledLocal = isEnabled
-        coroutineScope.launch(Dispatchers.IO) {
-            _isServiceEnabled.emit(isEnabled)
-        }
+        _isServiceEnabled.update { isEnabled }
     }
 
     override fun onChromeVisibleToUserChanged(isChromeVisible: Boolean) {
@@ -94,6 +102,23 @@ class GestureServiceController : GestureServiceManager, GestureServiceHandler {
                 val result = openChromeResult.first()
                 continuation.resume(result)
             }
+        }
+    }
+
+    private val _performedGesturesFlow = MutableSharedFlow<PerformedGesture>(replay = 0)
+    override val performedGesturesFlow = _performedGesturesFlow.asSharedFlow()
+
+    override fun onGesturePerformed(
+        timestamp: Long, gestureData: GestureData, result: GestureResult
+    ) {
+        coroutineScope.launch(Dispatchers.IO) {
+            _performedGesturesFlow.emit(
+                PerformedGesture(timestamp, gestureData, result)
+            )
+            Log.d(
+                "PerformedGesturesProvider",
+                "Gesture completed: ${PerformedGesture(timestamp, gestureData, result)}"
+            )
         }
     }
 }

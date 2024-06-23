@@ -8,16 +8,19 @@ import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.example.appclient.domain.GestureServiceHandler
+import com.example.appclient.domain.interfaces.GestureServiceHandler
 import com.example.common.domain.GestureData
+import com.example.common.domain.GestureResult
 import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.android.ext.android.inject
 import org.koin.core.annotation.Single
 
@@ -82,7 +85,7 @@ class GestureAccessibilityService : AccessibilityService() {
         Log.d("Accessibility", "Service interrupted")
     }
 
-    private fun performSwipe(gesture: GestureData) {
+    private suspend fun performSwipe(gesture: GestureData) {
         Log.d("Accessibility", "Gesture starting: $gesture")
         val path = Path()
         path.moveTo(gesture.start.x.toFloat(), gesture.start.y.toFloat())
@@ -91,17 +94,41 @@ class GestureAccessibilityService : AccessibilityService() {
         val gestureBuilder = GestureDescription.Builder()
         gestureBuilder.addStroke(GestureDescription.StrokeDescription(path, 0, gesture.duration))
         val gestureDescription = gestureBuilder.build()
+        val timestamp = System.currentTimeMillis()
+        val callbackChannel = Channel<GestureResult>(capacity = 1)
 
         dispatchGesture(gestureDescription, object : GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription) {
+                coroutineScope.launch(Dispatchers.IO) {
+                    callbackChannel.send(GestureResult.Completed)
+                }
+                gestureServiceHandler.onGesturePerformed(
+                    timestamp, gesture, GestureResult.Completed
+                )
                 Log.d("Accessibility", "Gesture completed")
             }
 
             override fun onCancelled(gestureDescription: GestureDescription) {
+                coroutineScope.launch(Dispatchers.IO) {
+                    callbackChannel.send(GestureResult.Cancelled)
+                }
+                gestureServiceHandler.onGesturePerformed(
+                    timestamp, gesture, GestureResult.Cancelled
+                )
                 Log.e("Accessibility", "Gesture cancelled")
             }
         }, null)
+
+        coroutineScope.launch(Dispatchers.IO) {
+            if (withTimeoutOrNull(gesture.duration + 999L) {
+                    callbackChannel.receive()
+                } == null) {
+                Log.d("Accessibility", "Gesture timeout")
+                gestureServiceHandler.onGesturePerformed(timestamp, gesture, GestureResult.TimeOut)
+            }
+        }
     }
+
 
     private fun monitorChromeState(nodeInfo: AccessibilityNodeInfo) {
         if (monitorChromeJob != null) return

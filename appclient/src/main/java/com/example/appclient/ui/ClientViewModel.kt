@@ -8,7 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
-import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.interfaces.GestureServiceManager
 import com.example.appclient.domain.usecase.ExecuteGestureUseCase
 import com.example.appclient.domain.usecase.ReceiveGestureUseCase
 import com.example.appclient.domain.usecase.SendSwipeAreaUseCase

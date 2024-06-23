@@ -1,7 +1,7 @@
 package com.example.appclient.domain.usecase
 
 import android.util.Log
-import com.example.appclient.domain.GestureServiceManager
+import com.example.appclient.domain.interfaces.GestureServiceManager
 import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
