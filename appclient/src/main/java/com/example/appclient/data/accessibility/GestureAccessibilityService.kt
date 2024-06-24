@@ -11,6 +11,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.example.appclient.domain.interfaces.GestureServiceHandler
 import com.example.common.domain.GestureData
 import com.example.common.domain.GestureResult
+import com.example.common.domain.PerformedGesture
 import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -43,7 +45,7 @@ class GestureAccessibilityService : AccessibilityService() {
         Log.d("Accessibility", "Accessibility: connected")
 
         findChromeNode()?.let { monitorChromeState(it) }
-        gestureServiceHandler.onServiceStateChanged(true)
+        gestureServiceHandler.onServiceState.update { true }
         openChromeJob = coroutineScope.launch(Dispatchers.IO) {
             gestureServiceHandler.openChrome.collect { _ ->
                 gestureServiceHandler.openChromeResult.emit(openChrome())
@@ -53,7 +55,7 @@ class GestureAccessibilityService : AccessibilityService() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         Log.d("Accessibility", "Accessibility: disconnected")
-        gestureServiceHandler.onServiceStateChanged(false)
+        gestureServiceHandler.onServiceState.update { false }
         swipeJob?.cancel()
         swipeJob = null
         openChromeJob?.cancel()
@@ -101,20 +103,20 @@ class GestureAccessibilityService : AccessibilityService() {
             override fun onCompleted(gestureDescription: GestureDescription) {
                 coroutineScope.launch(Dispatchers.IO) {
                     callbackChannel.send(GestureResult.Completed)
+                    gestureServiceHandler.onPerformedGestures.emit(
+                        PerformedGesture(timestamp, gesture, GestureResult.Completed)
+                    )
                 }
-                gestureServiceHandler.onGesturePerformed(
-                    timestamp, gesture, GestureResult.Completed
-                )
                 Log.d("Accessibility", "Gesture completed")
             }
 
             override fun onCancelled(gestureDescription: GestureDescription) {
                 coroutineScope.launch(Dispatchers.IO) {
                     callbackChannel.send(GestureResult.Cancelled)
+                    gestureServiceHandler.onPerformedGestures.emit(
+                        PerformedGesture(timestamp, gesture, GestureResult.Completed)
+                    )
                 }
-                gestureServiceHandler.onGesturePerformed(
-                    timestamp, gesture, GestureResult.Cancelled
-                )
                 Log.e("Accessibility", "Gesture cancelled")
             }
         }, null)
@@ -124,7 +126,9 @@ class GestureAccessibilityService : AccessibilityService() {
                     callbackChannel.receive()
                 } == null) {
                 Log.d("Accessibility", "Gesture timeout")
-                gestureServiceHandler.onGesturePerformed(timestamp, gesture, GestureResult.TimeOut)
+                gestureServiceHandler.onPerformedGestures.emit(
+                    PerformedGesture(timestamp, gesture, GestureResult.Completed)
+                )
             }
         }
     }
@@ -138,12 +142,12 @@ class GestureAccessibilityService : AccessibilityService() {
                 if (chromeNode != null) {
                     if (isChromeVisibleToUser != chromeNode.isVisibleToUser) {
                         isChromeVisibleToUser = chromeNode.isVisibleToUser
-                        gestureServiceHandler.onChromeVisibleToUserChanged(isChromeVisibleToUser)
+                        gestureServiceHandler.onChromeVisibleToUser.update { isChromeVisibleToUser }
                     }
                     val findIsChromeFocused = isChromeFocused()
                     if (isChromeFocused != findIsChromeFocused) {
                         isChromeFocused = findIsChromeFocused
-                        gestureServiceHandler.onChromeFocusedChanged(findIsChromeFocused)
+                        gestureServiceHandler.onChromeFocused.update { findIsChromeFocused }
                     }
                     if (isChromeVisibleToUser || isChromeFocused) { //if (isChromeVisibleAndFocused(event))
                         val chromeBounds = Rect()
@@ -151,7 +155,7 @@ class GestureAccessibilityService : AccessibilityService() {
                         if (chromeSwipeArea != chromeBounds) {
                             chromeSwipeArea = chromeBounds
                             Log.d("Accessibility", "Chrome area changed: $chromeSwipeArea}")
-                            gestureServiceHandler.onSwipeAreaChanged(chromeSwipeArea)
+                            gestureServiceHandler.onChromeSwipeArea.update { chromeSwipeArea }
                         }
                         if (isChromeVisibleToUser && isChromeFocused) {
                             if (swipeJob?.isActive != true) {
@@ -167,11 +171,11 @@ class GestureAccessibilityService : AccessibilityService() {
                     }
                 } else {
                     isChromeVisibleToUser = false
-                    gestureServiceHandler.onChromeVisibleToUserChanged(isChromeVisibleToUser)
+                    gestureServiceHandler.onChromeVisibleToUser.update { isChromeVisibleToUser }
                     isChromeFocused = false
-                    gestureServiceHandler.onChromeFocusedChanged(isChromeFocused)
+                    gestureServiceHandler.onChromeFocused.update { isChromeFocused }
                     chromeSwipeArea = SwipeArea()
-                    gestureServiceHandler.onSwipeAreaChanged(chromeSwipeArea)
+                    gestureServiceHandler.onChromeSwipeArea.update { chromeSwipeArea }
                     swipeJob?.run {
                         Log.d("Accessibility", "monitorChromeJob stop: chromeNode not found")
                         stopSwipes()

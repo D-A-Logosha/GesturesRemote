@@ -18,6 +18,7 @@ import org.koin.core.component.inject
 
 interface WebSocketClient {
     val eventsFlow: SharedFlow<ClientWebSocketEvent>
+    val isConnected: StateFlow<Boolean>
     fun connect(ipAddress: String, port: String)
     fun disconnect()
     fun send(message: String)
@@ -34,9 +35,10 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
 
     private val httpClient: HttpClient by inject()
 
-    override var eventsFlow = MutableSharedFlow<ClientWebSocketEvent>(replay = 0)
-        private set
+    override val eventsFlow = MutableSharedFlow<ClientWebSocketEvent>(replay = 0)
 
+    private val _isConnected = MutableStateFlow(false)
+    override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
     private var webSocketSession: DefaultClientWebSocketSession? = null
 
@@ -61,6 +63,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                     }
 
                     webSocketSession = this
+                    _isConnected.update { true }
                     eventsFlow.emit(ClientWebSocketEvent.Connected(message = "Connected to server"))
 
                     for (frame in incoming) {
@@ -83,7 +86,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                                 eventsFlow.first { it is ClientWebSocketEvent.MessageReceived }
                             }
                             if (result == null) {
-                                socketJob?.let {
+                                if (socketJob?.isActive == true) {
                                     val timeoutException = Exception("Server timeout")
                                     eventsFlow.emit(ClientWebSocketEvent.Error(timeoutException))
                                     disconnect()
@@ -92,9 +95,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                             }
                         }
                     }
-
                 }
-
             } catch (e: Exception) {
                 Log.e("ClientWebSocket", "Error during WebSocket connection: ${e.message}", e)
                 eventsFlow.emit(ClientWebSocketEvent.Error(e))
@@ -116,6 +117,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
             } catch (e: Exception) {
                 Log.e("ClientWebSocket", "Error during WebSocket disconnect: ${e.message}", e)
             } finally {
+                _isConnected.update { false }
                 eventsFlow.emit(ClientWebSocketEvent.Disconnected(message = "Disconnected from server"))
             }
         }

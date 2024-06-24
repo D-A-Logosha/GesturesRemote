@@ -11,7 +11,7 @@ import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.interfaces.GestureServiceManager
 import com.example.appclient.domain.usecase.ExecuteGestureUseCase
 import com.example.appclient.domain.usecase.ReceiveGestureUseCase
-import com.example.appclient.domain.usecase.SendSwipeAreaUseCase
+import com.example.appclient.domain.usecase.UseCaseManager
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,7 +28,7 @@ class ClientViewModel(
     private val gestureServiceManager: GestureServiceManager,
 ) : ViewModel(), ClientViewModelInterface, KoinComponent {
 
-    private val sendSwipeAreaUseCase: SendSwipeAreaUseCase by inject(parameters = {
+    private val useCaseManager: UseCaseManager by inject(parameters = {
         parametersOf(viewModelScope)
     })
     private val receiveGestureUseCase: ReceiveGestureUseCase by inject(parameters = {
@@ -73,7 +73,6 @@ class ClientViewModel(
                         clientUiState = clientUiState.copy(clientState = ClientState.Started)
                         Log.d("ClientViewModel", "Event: Connected to server")
                         sendSnackbarMessage("Event: Connected to server")
-                        sendSwipeAreaUseCase.start()
                         receiveGestureUseCase.start()
                         executeGestureUseCase.start(receiveGestureUseCase.receivedGestureFlow)
                     }
@@ -82,7 +81,6 @@ class ClientViewModel(
                         clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
                         Log.d("ClientViewModel", "Event: Disconnected from server")
                         sendSnackbarMessage("Event: Disconnected from server")
-                        sendSwipeAreaUseCase.stop()
                         receiveGestureUseCase.stop()
                         executeGestureUseCase.stop()
                     }
@@ -91,7 +89,6 @@ class ClientViewModel(
                         clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
                         Log.e("ClientViewModel", "Event: WebSocket error: ${event.error}")
                         sendSnackbarMessage("Event: WebSocket error: ${event.error}")
-                        sendSwipeAreaUseCase.stop()
                         receiveGestureUseCase.stop()
                         executeGestureUseCase.stop()
                     }
@@ -111,22 +108,26 @@ class ClientViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             when (clientUiState.clientState) {
                 ClientState.Stopped -> {
-                    if (gestureServiceManager.isServiceEnabled()) {
+                    clientUiState = clientUiState.copy(clientState = ClientState.Starting)
+                    useCaseManager.start()
+                    if (gestureServiceManager.isServiceEnabled.value) {
                         if (gestureServiceManager.openChrome()) {
-                            clientUiState = clientUiState.copy(clientState = ClientState.Starting)
                             webSocketClient.connect(
                                 ipAddress = clientUiState.ipAddress, port = clientUiState.port
                             )
                         } else {
+                            clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
                             sendSnackbarMessage("Chrome not found")
                         }
                     } else {
+                        clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
                         sendSnackbarMessage("Accessibility Service is not enabled")
                     }
                 }
 
                 ClientState.Started -> {
                     clientUiState = clientUiState.copy(clientState = ClientState.Stopping)
+                    useCaseManager.stop()
                     webSocketClient.disconnect()
                 }
 

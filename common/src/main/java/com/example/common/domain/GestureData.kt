@@ -12,17 +12,17 @@ data class GestureData(
     val start: Point,
     val end: Point,
     val duration: Long,
-) : Parcelable {
+) : Parcelable, JsonSerializable {
     constructor(gesture: GestureData) : this(
         Point(gesture.start.x, gesture.start.y),
         Point(gesture.end.x, gesture.end.y),
         gesture.duration,
     )
 
-    fun toJson(): String = Json.encodeToString(this)
+    override fun toJson(): String = Json.encodeToString(this)
 
     companion object {
-        fun fromJson(json: String): GestureData = Json.decodeFromString(json)
+         fun fromJson(json: String): GestureData = Json.decodeFromString(json)
     }
 }
 

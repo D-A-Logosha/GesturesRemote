@@ -1,6 +1,5 @@
 package com.example.common.domain
 
-
 import android.graphics.Rect
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -16,11 +15,6 @@ fun Rect.copy(
     return Rect(left, top, right, bottom)
 }
 
-fun SwipeArea.fromJson(json: String): SwipeArea {
-    val serializableSwipeArea = Json.decodeFromString<SerializableSwipeArea>(json)
-    return serializableSwipeArea()
-}
+fun SwipeArea.toJson(): String = Json.encodeToString(SerializableSwipeArea(this))
 
-fun SwipeArea.toJson(): String {
-    return Json.encodeToString(SerializableSwipeArea(this))
-}
+fun SwipeArea.fromJson(json: String) = Json.decodeFromString<SerializableSwipeArea>(json)
