@@ -42,14 +42,14 @@ class UseCaseManager(
                 isServiceEnabled && isWebSocketConnected && isChromeVisible
             }.collect { shouldSendMessages ->
                 if (shouldSendMessages) {
-                    sendMessageUseCase.start(
+                    sendMessageUseCase.startSwipeArea(
                         chromeSwipeAreaProvider.chromeSwipeArea
                     )
                     Log.d("UseCaseManager", "Send swipe area started")
-                    sendMessageUseCase.start(
+                    sendMessageUseCase.startPerformedGesture(
                         performedGesturesProvider.performedGestures
                     )
-                    Log.d("UseCaseManager", "Send swipe area started")
+                    Log.d("UseCaseManager", "Send performed gestures started")
                 } else {
                     sendMessageUseCase.stop(
                         chromeSwipeAreaProvider.chromeSwipeArea

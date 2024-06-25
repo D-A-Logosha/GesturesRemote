@@ -1,7 +1,7 @@
 package com.example.appserver.domain.usecase
 
 import android.util.Log
-import com.example.appserver.data.WebSocketServer
+import com.example.appserver.data.websocket.WebSocketServer
 import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

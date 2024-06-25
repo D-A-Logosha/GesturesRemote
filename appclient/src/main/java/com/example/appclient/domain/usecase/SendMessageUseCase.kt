@@ -2,14 +2,16 @@ package com.example.appclient.domain.usecase
 
 import android.util.Log
 import com.example.appclient.data.websocket.WebSocketClient
-import com.example.common.domain.JsonSerializable
-import com.example.common.domain.SerializableSwipeArea
+import com.example.common.domain.Message
+import com.example.common.domain.PerformedGesture
 import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Factory
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -24,22 +26,35 @@ class SendMessageUseCase(
 
     private var job: Job? = null
 
-    fun <T> start(dataFlow: SharedFlow<T>): Job {
-        var job = jobMap[dataFlow]
+    fun startSwipeArea(dataFlow: SharedFlow<SwipeArea>): Job {
+        return returnJob(dataFlow) ?: run {
+            startFlow(dataFlow) { data ->
+                Json.encodeToString(Message(data))
+            }
+        }
+    }
+
+    fun startPerformedGesture(dataFlow: SharedFlow<PerformedGesture>): Job {
+        return returnJob(dataFlow) ?: run {
+            startFlow(dataFlow) { data ->
+                Json.encodeToString(Message(data))
+            }
+        }
+    }
+
+    private fun <T> returnJob(dataFlow: SharedFlow<T>): Job? {
+        val job = jobMap[dataFlow]
         if (job != null && job.isActive) {
             return job
         }
-        job = useCaseScope.launch(Dispatchers.IO) {
+        return null
+    }
+
+    private fun <T> startFlow(dataFlow: SharedFlow<T>, messageBuilder: (T) -> String): Job {
+        val job = useCaseScope.launch(Dispatchers.IO) {
             dataFlow.collect { data ->
                 try {
-                    val message = when (data) {
-                        is String -> data
-                        is SwipeArea -> SerializableSwipeArea(data).toJson()
-                        is JsonSerializable -> data.toJson()
-                        else -> {
-                            throw IllegalArgumentException("Data type ${data?.let { it::class.simpleName }} does not implement JsonSerializable")
-                        }
-                    }
+                    val message = messageBuilder(data)
                     webSocketClient.send(message)
                     Log.d("SendMessageUseCase", "Sending message: $message")
                 } catch (e: Exception) {

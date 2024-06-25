@@ -6,10 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.appserver.data.ServerWebSocketEvent
-import com.example.appserver.data.WebSocketServer
+import com.example.appserver.data.websocket.ServerWebSocketEvent
+import com.example.appserver.data.websocket.WebSocketServer
 import com.example.appserver.domain.usecase.GenerateGestureDataUseCase
 import com.example.appserver.domain.usecase.SendMessageUseCase
+import com.example.appserver.domain.usecase.UseCaseManager
 import com.example.common.domain.SerializableSwipeArea
 import com.example.common.domain.SwipeArea
 import com.example.settings.SettingsRepository
@@ -26,12 +27,15 @@ class ServerViewModel(
     private val webSocketServer: WebSocketServer,
 ) : ViewModel(), KoinComponent {
 
-    private val generateGestureDataUseCase: GenerateGestureDataUseCase by inject(parameters = {
+    private val useCaseManager: UseCaseManager by inject(parameters = {
+        parametersOf(viewModelScope)
+    })
+/*    private val generateGestureDataUseCase: GenerateGestureDataUseCase by inject(parameters = {
         parametersOf(viewModelScope)
     })
     private val sendMessageUseCase: SendMessageUseCase by inject(parameters = {
         parametersOf(viewModelScope)
-    })
+    })*/
 
     var serverUiState by mutableStateOf(getInitialServerUiState())
         private set
@@ -81,8 +85,8 @@ class ServerViewModel(
                         val msg = "Client disconnected: ${event.clientId}, reason: ${event.reason}"
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
-                        generateGestureDataUseCase.stop()
-                        sendMessageUseCase.stop()
+                        //generateGestureDataUseCase.stop()
+                        //sendMessageUseCase.stop()
 
                     }
 
@@ -93,12 +97,12 @@ class ServerViewModel(
                             try {
                                 val swipeAreaJson =
                                     Json.decodeFromString<SerializableSwipeArea>(event.message)
-                                generateGestureDataUseCase.start(SwipeArea(swipeAreaJson()))
-                                sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
+                                //generateGestureDataUseCase.start(SwipeArea(swipeAreaJson()))
+                                //sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
                             } catch (e: Exception) {
-                                Log.e(
+/*                                Log.e(
                                     "ServerViewModel", "Error decoding swipe area: ${e.message}", e
-                                )
+                                )*/
                             }
                         }
                     }
@@ -107,7 +111,7 @@ class ServerViewModel(
                         serverUiState = serverUiState.copy(serverState = ServerState.Stopped)
                         Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: ${event.message}")
-                        generateGestureDataUseCase.stop()
+                        //generateGestureDataUseCase.stop()
 
                     }
 
@@ -131,6 +135,7 @@ class ServerViewModel(
 
     fun onStartClick() {
         if (serverUiState.serverState == ServerState.Stopped) {
+            useCaseManager.start()
             webSocketServer.start(serverUiState.port)
             serverUiState = serverUiState.copy(serverState = ServerState.Starting)
         }
@@ -138,6 +143,7 @@ class ServerViewModel(
 
     fun onStopClick() {
         if (serverUiState.serverState == ServerState.Running) {
+            useCaseManager.stop()
             webSocketServer.stop()
             serverUiState = serverUiState.copy(serverState = ServerState.Stopping)
         }

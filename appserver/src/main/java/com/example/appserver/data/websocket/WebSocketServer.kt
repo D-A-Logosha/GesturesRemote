@@ -1,4 +1,4 @@
-package com.example.appserver.data
+package com.example.appserver.data.websocket
 
 import android.util.Log
 import io.ktor.server.application.*
@@ -19,6 +19,7 @@ import java.time.Duration
 
 interface WebSocketServer {
     val eventsFlow: SharedFlow<ServerWebSocketEvent>
+    val isConnected: StateFlow<Boolean>
     fun start(port: String)
     fun stop()
     fun send(message: String)
@@ -38,8 +39,11 @@ sealed class ServerWebSocketEvent {
 
 class KtorWebSocketServer : WebSocketServer {
 
-    override var eventsFlow = MutableSharedFlow<ServerWebSocketEvent>(replay = 0)
-        private set
+    private var _eventsFlow = MutableSharedFlow<ServerWebSocketEvent>(replay = 0)
+    override val eventsFlow = _eventsFlow.asSharedFlow()
+
+    private val _isConnected = MutableStateFlow(false)
+    override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
 
@@ -60,10 +64,11 @@ class KtorWebSocketServer : WebSocketServer {
                         maxFrameSize = Long.MAX_VALUE
                         masking = false
                     }
+                    _isConnected.update { true }
                     launch {
                         val msg = "Server started"
                         Log.d("ServerWebSocket", msg)
-                        eventsFlow.emit(ServerWebSocketEvent.ServerStarted(msg))
+                        _eventsFlow.emit(ServerWebSocketEvent.ServerStarted(msg))
                     }
                     routing {
                         webSocket("/echo") {
@@ -76,13 +81,13 @@ class KtorWebSocketServer : WebSocketServer {
                             }
 
                             val clientId = call.request.headers["clientId"] ?: "unknown"
-                            eventsFlow.emit(ServerWebSocketEvent.ClientConnected(clientId = clientId))
+                            _eventsFlow.emit(ServerWebSocketEvent.ClientConnected(clientId = clientId))
                             try {
                                 incoming.consumeEach { frame ->
                                     if (frame is Frame.Text) {
                                         val text = frame.readText()
-                                       // Log.d("ServerWebSocket", "Received from $clientId: $text")
-                                        eventsFlow.emit(
+                                        // Log.d("ServerWebSocket", "Received from $clientId: $text")
+                                        _eventsFlow.emit(
                                             ServerWebSocketEvent.MessageReceived(
                                                 clientId, text
                                             )
@@ -94,14 +99,14 @@ class KtorWebSocketServer : WebSocketServer {
                             } catch (e: Exception) {
                                 val msg = "Error while receiving messages: ${e.message}"
                                 Log.e("ServerWebSocket", msg, e)
-                                eventsFlow.emit(ServerWebSocketEvent.WebSocketError(Exception(msg)))
+                                _eventsFlow.emit(ServerWebSocketEvent.WebSocketError(Exception(msg)))
                             } finally {
                                 val reason = closeReason.await()?.message
                                 Log.d(
                                     "ServerWebSocket",
                                     "Client disconnected: $clientId, reason: $reason"
                                 )
-                                eventsFlow.emit(
+                                _eventsFlow.emit(
                                     ServerWebSocketEvent.ClientDisconnected(clientId, reason)
                                 )
                             }
@@ -111,8 +116,8 @@ class KtorWebSocketServer : WebSocketServer {
             } catch (e: Exception) {
                 val msg = "Exception in ServerWebSocket: ${e.message}"
                 Log.e("ServerWebSocket", msg, e)
-                eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
-                eventsFlow.emit(ServerWebSocketEvent.ServerStopped(msg))
+                _eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
+                this@KtorWebSocketServer.stop()
             }
         }
     }
@@ -135,12 +140,14 @@ class KtorWebSocketServer : WebSocketServer {
                 server = null
                 val msg = "Server stopped"
                 Log.d("ServerWebSocket", msg)
-                eventsFlow.emit(ServerWebSocketEvent.ServerStopped(msg))
+                _eventsFlow.emit(ServerWebSocketEvent.ServerStopped(msg))
 
             } catch (e: Exception) {
                 val msg = "Exception in stopping server: ${e.message}"
                 Log.e("ServerWebSocket", msg, e)
-                eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
+                _eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
+            } finally {
+                _isConnected.update { false }
             }
         }
     }

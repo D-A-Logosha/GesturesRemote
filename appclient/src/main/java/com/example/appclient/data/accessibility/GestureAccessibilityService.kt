@@ -127,7 +127,7 @@ class GestureAccessibilityService : AccessibilityService() {
                 } == null) {
                 Log.d("Accessibility", "Gesture timeout")
                 gestureServiceHandler.onPerformedGestures.emit(
-                    PerformedGesture(timestamp, gesture, GestureResult.Completed)
+                    PerformedGesture(timestamp, gesture, GestureResult.TimeOut)
                 )
             }
         }
