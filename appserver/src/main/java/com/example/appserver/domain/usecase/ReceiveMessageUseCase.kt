@@ -20,12 +20,12 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Single
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-@Single
+@Factory
 class ReceiveMessageUseCase(
+    private val clientId: String,
     private val useCaseScope: CoroutineScope,
 ) : ChromeSwipeAreaProviders, PerformedGesturesProviders, KoinComponent {
     private val webSocketServer: WebSocketServer by inject()
@@ -48,6 +48,7 @@ class ReceiveMessageUseCase(
             webSocketServer.eventsFlow.collect { event ->
                 when (event) {
                     is ServerWebSocketEvent.MessageReceived -> {
+                        if (event.clientId != clientId) return@collect
                         if (event.message.startsWith("{") && event.message.endsWith("}")) {
                             try {
                                 val message = Json.decodeFromString<Message>(event.message)

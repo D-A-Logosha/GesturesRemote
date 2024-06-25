@@ -67,15 +67,14 @@ class SendMessageUseCase(
     }
 
     fun stop(dataFlow: SharedFlow<*>) {
-        val job = jobMap[dataFlow]
-        job?.cancel()
-        jobMap[dataFlow] = null
+        jobMap[dataFlow]?.cancel()
+        jobMap.remove(dataFlow)
     }
 
     fun stop() {
-        jobMap.forEach { (flow, job) ->
+        jobMap.forEach { (_, job) ->
             job?.cancel()
-            jobMap[flow] = null
         }
+        jobMap.clear()
     }
 }

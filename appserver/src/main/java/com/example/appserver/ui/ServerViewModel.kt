@@ -8,34 +8,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appserver.data.websocket.ServerWebSocketEvent
 import com.example.appserver.data.websocket.WebSocketServer
-import com.example.appserver.domain.usecase.GenerateGestureDataUseCase
-import com.example.appserver.domain.usecase.SendMessageUseCase
 import com.example.appserver.domain.usecase.UseCaseManager
-import com.example.common.domain.SerializableSwipeArea
-import com.example.common.domain.SwipeArea
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.koin.core.parameter.parametersOf
 
 class ServerViewModel(
     private val settingsRepository: SettingsRepository,
     private val webSocketServer: WebSocketServer,
 ) : ViewModel(), KoinComponent {
 
-    private val useCaseManager: UseCaseManager by inject(parameters = {
-        parametersOf(viewModelScope)
-    })
-/*    private val generateGestureDataUseCase: GenerateGestureDataUseCase by inject(parameters = {
-        parametersOf(viewModelScope)
-    })
-    private val sendMessageUseCase: SendMessageUseCase by inject(parameters = {
-        parametersOf(viewModelScope)
-    })*/
+    private var useCaseManagers: MutableMap<String, UseCaseManager> = mutableMapOf()
 
     var serverUiState by mutableStateOf(getInitialServerUiState())
         private set
@@ -76,43 +61,35 @@ class ServerViewModel(
                     }
 
                     is ServerWebSocketEvent.ClientConnected -> {
+                        useCaseManagers[event.clientId] =
+                            UseCaseManager(event.clientId, viewModelScope)
+                        useCaseManagers[event.clientId]?.start()
                         val msg = "Client connected: ${event.clientId}"
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
                     }
 
                     is ServerWebSocketEvent.ClientDisconnected -> {
+                        useCaseManagers[event.clientId]?.stop()
+                        useCaseManagers.remove(event.clientId)
                         val msg = "Client disconnected: ${event.clientId}, reason: ${event.reason}"
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
-                        //generateGestureDataUseCase.stop()
-                        //sendMessageUseCase.stop()
-
                     }
 
                     is ServerWebSocketEvent.MessageReceived -> {
                         val msg = "Message received from ${event.clientId}: ${event.message}"
                         Log.d("ServerViewModel", msg)
-                        if (event.message.startsWith("{") && event.message.endsWith("}")) {
-                            try {
-                                val swipeAreaJson =
-                                    Json.decodeFromString<SerializableSwipeArea>(event.message)
-                                //generateGestureDataUseCase.start(SwipeArea(swipeAreaJson()))
-                                //sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
-                            } catch (e: Exception) {
-/*                                Log.e(
-                                    "ServerViewModel", "Error decoding swipe area: ${e.message}", e
-                                )*/
-                            }
-                        }
                     }
 
                     is ServerWebSocketEvent.ServerStopped -> {
                         serverUiState = serverUiState.copy(serverState = ServerState.Stopped)
+                        useCaseManagers.forEach { (_, useCaseManager) ->
+                            useCaseManager.stop()
+                        }
+                        useCaseManagers.clear()
                         Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: ${event.message}")
-                        //generateGestureDataUseCase.stop()
-
                     }
 
                     is ServerWebSocketEvent.WebSocketError -> {
@@ -135,7 +112,6 @@ class ServerViewModel(
 
     fun onStartClick() {
         if (serverUiState.serverState == ServerState.Stopped) {
-            useCaseManager.start()
             webSocketServer.start(serverUiState.port)
             serverUiState = serverUiState.copy(serverState = ServerState.Starting)
         }
@@ -143,7 +119,6 @@ class ServerViewModel(
 
     fun onStopClick() {
         if (serverUiState.serverState == ServerState.Running) {
-            useCaseManager.stop()
             webSocketServer.stop()
             serverUiState = serverUiState.copy(serverState = ServerState.Stopping)
         }

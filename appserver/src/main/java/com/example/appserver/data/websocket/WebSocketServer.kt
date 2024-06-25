@@ -16,13 +16,15 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.Duration
+import java.util.UUID
 
 interface WebSocketServer {
     val eventsFlow: SharedFlow<ServerWebSocketEvent>
     val isConnected: StateFlow<Boolean>
+    val connectedClients: StateFlow<Set<String>>
     fun start(port: String)
     fun stop()
-    fun send(message: String)
+    fun send(clientId: String, message: String)
 }
 
 sealed class ServerWebSocketEvent {
@@ -33,7 +35,7 @@ sealed class ServerWebSocketEvent {
 
     data class MessageReceived(val clientId: String, val message: String) : ServerWebSocketEvent()
     data class ServerStopped(val message: String) : ServerWebSocketEvent()
-    data class WebSocketError(val error: Throwable) : ServerWebSocketEvent()
+    data class WebSocketError(val clientId: String, val error: Throwable) : ServerWebSocketEvent()
     data class ServerError(val error: Throwable) : ServerWebSocketEvent()
 }
 
@@ -45,10 +47,13 @@ class KtorWebSocketServer : WebSocketServer {
     private val _isConnected = MutableStateFlow(false)
     override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
+    private val _connectedClients = MutableStateFlow<Set<String>>(emptySet())
+    override val connectedClients = _connectedClients.asStateFlow()
+
     private val coroutineScope = CoroutineScope(SupervisorJob())
 
     private var server: ApplicationEngine? = null
-    private var webSocketSession: DefaultWebSocketServerSession? = null
+    private val webSocketSessions = mutableMapOf<String, DefaultWebSocketServerSession>()
 
     override fun start(port: String) {
         coroutineScope.launch(Dispatchers.IO) {
@@ -65,14 +70,16 @@ class KtorWebSocketServer : WebSocketServer {
                         masking = false
                     }
                     _isConnected.update { true }
-                    launch {
+                    launch(Dispatchers.IO) {
                         val msg = "Server started"
                         Log.d("ServerWebSocket", msg)
                         _eventsFlow.emit(ServerWebSocketEvent.ServerStarted(msg))
                     }
                     routing {
                         webSocket("/echo") {
-                            webSocketSession = this
+                            val clientId = UUID.randomUUID().toString()
+                            webSocketSessions[clientId] = this
+                            _connectedClients.update { it + clientId }
                             launch {
                                 while (isActive) {
                                     delay(999L)
@@ -80,7 +87,6 @@ class KtorWebSocketServer : WebSocketServer {
                                 }
                             }
 
-                            val clientId = call.request.headers["clientId"] ?: "unknown"
                             _eventsFlow.emit(ServerWebSocketEvent.ClientConnected(clientId = clientId))
                             try {
                                 incoming.consumeEach { frame ->
@@ -99,15 +105,22 @@ class KtorWebSocketServer : WebSocketServer {
                             } catch (e: Exception) {
                                 val msg = "Error while receiving messages: ${e.message}"
                                 Log.e("ServerWebSocket", msg, e)
-                                _eventsFlow.emit(ServerWebSocketEvent.WebSocketError(Exception(msg)))
+                                _eventsFlow.emit(
+                                    ServerWebSocketEvent.WebSocketError(
+                                        clientId,
+                                        Exception(msg)
+                                    )
+                                )
                             } finally {
                                 val reason = closeReason.await()?.message
+                                webSocketSessions.remove(clientId)
+                                _connectedClients.update { it - clientId }
+                                _eventsFlow.emit(
+                                    ServerWebSocketEvent.ClientDisconnected(clientId, reason)
+                                )
                                 Log.d(
                                     "ServerWebSocket",
                                     "Client disconnected: $clientId, reason: $reason"
-                                )
-                                _eventsFlow.emit(
-                                    ServerWebSocketEvent.ClientDisconnected(clientId, reason)
                                 )
                             }
                         }
@@ -152,9 +165,9 @@ class KtorWebSocketServer : WebSocketServer {
         }
     }
 
-    override fun send(message: String) {
+    override fun send(clientId: String, message: String) {
         coroutineScope.launch(Dispatchers.IO) {
-            webSocketSession?.send(Frame.Text(message))
+            webSocketSessions[clientId]?.send(Frame.Text(message))
         }
     }
 }

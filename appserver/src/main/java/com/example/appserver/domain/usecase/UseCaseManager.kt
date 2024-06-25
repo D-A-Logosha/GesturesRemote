@@ -11,39 +11,29 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import org.koin.core.parameter.parametersOf
 
 class UseCaseManager(
-    private val viewModelScope: CoroutineScope
+    private val clientId: String,
+    private val viewModelScope: CoroutineScope,
 ) : KoinComponent {
 
     private val webSocketServer: WebSocketServer by inject()
-    private val receiveMessageUseCase: ReceiveMessageUseCase by inject(parameters = {
-        parametersOf(useCaseScope)
-    })
-    private val generateGestureDataUseCase: GenerateGestureDataUseCase by inject(parameters = {
-        parametersOf(useCaseScope)
-    })
-    private val sendMessageUseCase: SendMessageUseCase by inject(parameters = {
-        parametersOf(useCaseScope)
-    })
-    private val chromeSwipeAreaProvider: ChromeSwipeAreaProviders by inject(parameters = {
-        parametersOf(useCaseScope)
-    })
-    private val performedGesturesProvider: PerformedGesturesProviders by inject(parameters = {
-        parametersOf(useCaseScope)
-    })
-
 
     private val useCaseScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
 
     private var job: Job? = null
 
+    private val receiveMessageUseCase = ReceiveMessageUseCase(clientId, useCaseScope)
+    private val generateGestureDataUseCase = GenerateGestureDataUseCase(useCaseScope)
+    private val sendMessageUseCase = SendMessageUseCase(clientId, useCaseScope)
+    private val chromeSwipeAreaProvider = receiveMessageUseCase as ChromeSwipeAreaProviders
+    private val performedGesturesProvider = receiveMessageUseCase as PerformedGesturesProviders
+
     fun start() {
         job = useCaseScope.launch(Dispatchers.IO) {
             useCaseScope.launch(Dispatchers.IO) {
-                webSocketServer.isConnected.collect { isConnected ->
-                    if (isConnected) {
+                webSocketServer.connectedClients.collect { connectedClients ->
+                    if (connectedClients.contains(clientId)) {
                         receiveMessageUseCase.start()
                         Log.d("UseCaseManager", "Receive messages started")
                     } else {
@@ -51,16 +41,19 @@ class UseCaseManager(
                         Log.d("UseCaseManager", "Receive messages stopped")
                     }
                 }
+
             }
             useCaseScope.launch(Dispatchers.IO) {
-                chromeSwipeAreaProvider.isProviderAvailable.collect { isAvailable ->
-                    if (isAvailable) {
-                        sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
-                        chromeSwipeAreaProvider.chromeSwipeArea.collect { data ->
-                            generateGestureDataUseCase.start(data)
+                useCaseScope.launch(Dispatchers.IO) {
+                    chromeSwipeAreaProvider.isProviderAvailable.collect { isAvailable ->
+                        if (isAvailable) {
+                            sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
+                            chromeSwipeAreaProvider.chromeSwipeArea.collect { data ->
+                                generateGestureDataUseCase.start(data)
+                            }
+                        } else {
+                            generateGestureDataUseCase.stop()
                         }
-                    } else {
-                        generateGestureDataUseCase.stop()
                     }
                 }
             }
@@ -69,6 +62,8 @@ class UseCaseManager(
 
     fun stop() {
         receiveMessageUseCase.stop()
+        generateGestureDataUseCase.stop()
+        sendMessageUseCase.stop()
         job?.cancel()
         job = null
     }

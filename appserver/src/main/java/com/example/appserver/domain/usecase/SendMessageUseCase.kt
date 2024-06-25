@@ -12,6 +12,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
 class SendMessageUseCase(
+    private val clientId: String,
     private val viewModelScope: CoroutineScope,
 ) : KoinComponent {
     private val webSocketServer: WebSocketServer by inject()
@@ -27,7 +28,7 @@ class SendMessageUseCase(
             gestureDataFlow.collect { data ->
                 try {
                     Log.d("SendMessageUseCase", "Sending message: ${data.toJson()}")
-                    webSocketServer.send(data.toJson())
+                    webSocketServer.send(clientId, data.toJson())
                 } catch (e: Exception) {
                     Log.e("SendMessageUseCase", "Error sending message: ${e.message}", e)
                 }
@@ -38,9 +39,9 @@ class SendMessageUseCase(
     }
 
     fun stop() {
-        jobMap.forEach { (flow, job) ->
+        jobMap.forEach { (_, job) ->
             job?.cancel()
-            jobMap[flow] = null
         }
+        jobMap.clear()
     }
 }

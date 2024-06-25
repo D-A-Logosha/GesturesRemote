@@ -3,12 +3,6 @@ package com.example.appserver
 import android.app.Application
 import com.example.appserver.data.websocket.KtorWebSocketServer
 import com.example.appserver.data.websocket.WebSocketServer
-import com.example.appserver.domain.interfaces.ChromeSwipeAreaProviders
-import com.example.appserver.domain.interfaces.PerformedGesturesProviders
-import com.example.appserver.domain.usecase.GenerateGestureDataUseCase
-import com.example.appserver.domain.usecase.ReceiveMessageUseCase
-import com.example.appserver.domain.usecase.SendMessageUseCase
-import com.example.appserver.domain.usecase.UseCaseManager
 import com.example.appserver.ui.ServerViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository
@@ -18,7 +12,6 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
-import org.koin.dsl.binds
 import org.koin.dsl.module
 
 class AppServer : Application() {
@@ -41,12 +34,5 @@ class AppServer : Application() {
         }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
         single<WebSocketServer> { KtorWebSocketServer() }
-        factory { (parentScope: CoroutineScope) -> GenerateGestureDataUseCase(parentScope) }
-        factory { (parentScope: CoroutineScope) -> SendMessageUseCase(parentScope) }
-        factory { (parentScope: CoroutineScope) -> UseCaseManager(parentScope) }
-        single { (parentScope: CoroutineScope) -> ReceiveMessageUseCase(parentScope) } binds arrayOf(
-            ChromeSwipeAreaProviders::class,
-            PerformedGesturesProviders::class,
-        )
     }
 }
