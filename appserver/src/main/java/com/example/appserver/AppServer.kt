@@ -1,6 +1,8 @@
 package com.example.appserver
 
 import android.app.Application
+import com.example.appserver.data.EventLogger
+import com.example.appserver.data.database.databaseModule
 import com.example.appserver.data.websocket.KtorWebSocketServer
 import com.example.appserver.data.websocket.WebSocketServer
 import com.example.appserver.ui.ServerViewModel
@@ -34,5 +36,6 @@ class AppServer : Application() {
         }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
         single<WebSocketServer> { KtorWebSocketServer() }
-    }
+        single { EventLogger() }
+    } + databaseModule
 }

@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.databinding.adapters)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -85,5 +86,10 @@ dependencies {
     implementation(libs.ktor.server.cio)
 
     implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.kotlinx.datetime)
 
 }

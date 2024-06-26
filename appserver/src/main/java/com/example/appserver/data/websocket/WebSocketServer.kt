@@ -1,20 +1,36 @@
 package com.example.appserver.data.websocket
 
 import android.util.Log
-import io.ktor.server.application.*
-import io.ktor.server.cio.*
-import io.ktor.server.engine.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import com.example.appserver.data.EventLogger
+import com.example.appserver.domain.EventType
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.ApplicationEngine
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.DefaultWebSocketServerSession
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.time.Duration
 import java.util.UUID
 
@@ -39,7 +55,9 @@ sealed class ServerWebSocketEvent {
     data class ServerError(val error: Throwable) : ServerWebSocketEvent()
 }
 
-class KtorWebSocketServer : WebSocketServer {
+class KtorWebSocketServer : WebSocketServer, KoinComponent {
+
+    private val eventLogger: EventLogger by inject()
 
     private var _eventsFlow = MutableSharedFlow<ServerWebSocketEvent>(replay = 0)
     override val eventsFlow = _eventsFlow.asSharedFlow()
@@ -168,6 +186,7 @@ class KtorWebSocketServer : WebSocketServer {
     override fun send(clientId: String, message: String) {
         coroutineScope.launch(Dispatchers.IO) {
             webSocketSessions[clientId]?.send(Frame.Text(message))
+            eventLogger.logClientEvent(clientId, EventType.MessageSent, message)
         }
     }
 }

@@ -6,14 +6,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appserver.data.EventLogger
 import com.example.appserver.data.websocket.ServerWebSocketEvent
 import com.example.appserver.data.websocket.WebSocketServer
+import com.example.appserver.domain.EventType
 import com.example.appserver.domain.usecase.UseCaseManager
 import com.example.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 class ServerViewModel(
     private val settingsRepository: SettingsRepository,
@@ -21,6 +24,8 @@ class ServerViewModel(
 ) : ViewModel(), KoinComponent {
 
     private var useCaseManagers: MutableMap<String, UseCaseManager> = mutableMapOf()
+
+    private val eventLogger: EventLogger by inject()
 
     var serverUiState by mutableStateOf(getInitialServerUiState())
         private set
@@ -55,15 +60,16 @@ class ServerViewModel(
                 when (event) {
                     is ServerWebSocketEvent.ServerStarted -> {
                         serverUiState = serverUiState.copy(serverState = ServerState.Running)
-                        val msg = "Server started"
-                        Log.d("ServerViewModel", msg)
-                        sendSnackbarMessage("Event: $msg")
+                        eventLogger.logServerEvent(EventType.ServerStarted)
+                        Log.d("ServerViewModel", event.message)
+                        sendSnackbarMessage("Event: $event.message")
                     }
 
                     is ServerWebSocketEvent.ClientConnected -> {
                         useCaseManagers[event.clientId] =
                             UseCaseManager(event.clientId, viewModelScope)
                         useCaseManagers[event.clientId]?.start()
+                        eventLogger.logClientEvent(event.clientId, EventType.ClientConnected)
                         val msg = "Client connected: ${event.clientId}"
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
@@ -72,12 +78,18 @@ class ServerViewModel(
                     is ServerWebSocketEvent.ClientDisconnected -> {
                         useCaseManagers[event.clientId]?.stop()
                         useCaseManagers.remove(event.clientId)
+                        eventLogger.logClientEvent(
+                            event.clientId, EventType.ClientDisconnected, event.reason
+                        )
                         val msg = "Client disconnected: ${event.clientId}, reason: ${event.reason}"
                         Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
                     }
 
                     is ServerWebSocketEvent.MessageReceived -> {
+                        eventLogger.logClientEvent(
+                            event.clientId, EventType.MessageReceived, event.message
+                        )
                         val msg = "Message received from ${event.clientId}: ${event.message}"
                         Log.d("ServerViewModel", msg)
                     }
@@ -88,17 +100,22 @@ class ServerViewModel(
                             useCaseManager.stop()
                         }
                         useCaseManagers.clear()
+                        eventLogger.logServerEvent(EventType.ServerStopped)
                         Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: ${event.message}")
                     }
 
                     is ServerWebSocketEvent.WebSocketError -> {
-                        Log.e("ServerViewModel", "${event.error.message}")
-                        sendSnackbarMessage("Receive error: ${event.error.message}")
+                        eventLogger.logClientEvent(
+                            event.clientId, EventType.Error, event.error.message
+                        )
+                        Log.e("ServerViewModel", "${event.clientId}: ${event.error.message}")
+                        sendSnackbarMessage("Receive error:${event.clientId}: ${event.error.message}")
                     }
 
                     is ServerWebSocketEvent.ServerError -> {
                         serverUiState = serverUiState.copy(serverState = ServerState.Stopped)
+                        eventLogger.logServerEvent(EventType.Error, event.error.message)
                         Log.e("ServerViewModel", "${event.error.message}")
                         sendSnackbarMessage("Error: ${event.error.message}")
                     }
@@ -112,15 +129,17 @@ class ServerViewModel(
 
     fun onStartClick() {
         if (serverUiState.serverState == ServerState.Stopped) {
-            webSocketServer.start(serverUiState.port)
             serverUiState = serverUiState.copy(serverState = ServerState.Starting)
+            webSocketServer.start(serverUiState.port)
+            eventLogger.logServerEvent(EventType.ServerStarting)
         }
     }
 
     fun onStopClick() {
         if (serverUiState.serverState == ServerState.Running) {
-            webSocketServer.stop()
             serverUiState = serverUiState.copy(serverState = ServerState.Stopping)
+            webSocketServer.stop()
+            eventLogger.logServerEvent(EventType.ServerStopping)
         }
     }
 

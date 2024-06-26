@@ -1,7 +1,9 @@
 package com.example.appserver.domain.usecase
 
 import android.util.Log
+import com.example.appserver.data.EventLogger
 import com.example.appserver.data.websocket.WebSocketServer
+import com.example.appserver.domain.EventType
 import com.example.appserver.domain.interfaces.ChromeSwipeAreaProviders
 import com.example.appserver.domain.interfaces.PerformedGesturesProviders
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +20,8 @@ class UseCaseManager(
 ) : KoinComponent {
 
     private val webSocketServer: WebSocketServer by inject()
+
+    private val eventLogger: EventLogger by inject()
 
     private val useCaseScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob())
 
@@ -58,6 +62,7 @@ class UseCaseManager(
                 }
             }
         }
+        eventLogger.logUseCaseManagerEvent(clientId, EventType.ManagerStarted)
     }
 
     fun stop() {
@@ -66,5 +71,6 @@ class UseCaseManager(
         sendMessageUseCase.stop()
         job?.cancel()
         job = null
+        eventLogger.logUseCaseManagerEvent(clientId, EventType.ManagerStopped)
     }
 }
