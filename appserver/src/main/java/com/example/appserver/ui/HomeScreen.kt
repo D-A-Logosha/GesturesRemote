@@ -42,6 +42,7 @@ import org.koin.androidx.compose.koinViewModel
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: ServerViewModel = koinViewModel(),
+    onLogsClick: () -> Unit = {},
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -101,7 +102,7 @@ fun HomeScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { viewModel.onLogsClick() },
+                    onClick = onLogsClick,
                     modifier = Modifier.width(buttonWidth.dp),
                 ) {
                     Text("Logs")

@@ -5,6 +5,7 @@ import com.example.appserver.data.EventLogger
 import com.example.appserver.data.database.databaseModule
 import com.example.appserver.data.websocket.KtorWebSocketServer
 import com.example.appserver.data.websocket.WebSocketServer
+import com.example.appserver.ui.EventLogViewModel
 import com.example.appserver.ui.ServerViewModel
 import com.example.settings.SettingsRepository
 import com.example.settings.SharedPreferencesSettingsRepository
@@ -34,6 +35,7 @@ class AppServer : Application() {
             }
             ServerViewModel(get(), get())
         }
+        viewModel { EventLogViewModel(get()) }
         single<SettingsRepository> { SharedPreferencesSettingsRepository() }
         single<WebSocketServer> { KtorWebSocketServer() }
         single { EventLogger() }

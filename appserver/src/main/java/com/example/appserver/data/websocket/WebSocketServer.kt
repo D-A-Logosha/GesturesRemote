@@ -111,11 +111,11 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                                     if (frame is Frame.Text) {
                                         val text = frame.readText()
                                         // Log.d("ServerWebSocket", "Received from $clientId: $text")
-                                        _eventsFlow.emit(
-                                            ServerWebSocketEvent.MessageReceived(
-                                                clientId, text
+                                        if (text != "client message") _eventsFlow.emit(
+                                                ServerWebSocketEvent.MessageReceived(
+                                                    clientId, text
+                                                )
                                             )
-                                        )
                                     } else Log.d(
                                         "ServerWebSocket", "Received from $clientId: non-text frame"
                                     )
