@@ -6,11 +6,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.appserver.data.database.EventDao
 import com.example.appserver.domain.EventType
 import com.example.appserver.ui.EventLogUiState.EventUI
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -18,7 +17,8 @@ import kotlinx.datetime.Instant
 data class EventLogUiState(
     val events: List<EventUI> = emptyList(),
     val isLoading: Boolean = false,
-    val error: Throwable? = null,
+    val isRefreshing: Boolean = false,
+    val error: String? = null,
     val reachedEnd: Boolean = false,
 ) {
     data class EventUI(
@@ -37,47 +37,48 @@ class EventLogViewModel(
     val uiState: StateFlow<EventLogUiState> = _uiState.asStateFlow()
 
     private val events = mutableStateListOf<EventUI>()
-    private var lastTimestamp: Instant? = null
-    val pageSize = 10
+    private var lastTimestamp: Instant = Instant.DISTANT_FUTURE
+    private val pageSize = 10
 
     init {
         loadEvents()
     }
 
     fun loadEvents() {
-        viewModelScope.launch {
-            eventDao.getEventsFlow(lastTimestamp ?: Instant.DISTANT_FUTURE, pageSize)
-                .map { events ->
-                    events.map { event ->
-                        EventUI(
-                            timestamp = formatInstant(event.timestamp),
-                            eventType = event.eventType,
-                            clientId = event.clientId,
-                            details = event.details
-                        )
-                    }.also {
-                        lastTimestamp = events.lastOrNull()?.timestamp
-                        if (events.size < pageSize) _uiState.update {
-                            it.copy(reachedEnd = true)
-                        }
-                    }
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                val newEvents = eventDao.getEvents(
+                    lastTimestamp = lastTimestamp, limit = pageSize
+                )
+                val newEventsUI = newEvents.map { event ->
+                    EventUI(
+                        timestamp = formatInstant(event.timestamp),
+                        eventType = event.eventType,
+                        clientId = event.clientId,
+                        details = event.details
+                    )
+                }
+                newEvents.lastOrNull()?.let {
+                    lastTimestamp = it.timestamp
+                }
+                if (newEvents.size < pageSize) _uiState.update {
+                    it.copy(reachedEnd = true)
+                }
+                events.addAll(newEventsUI)
 
+                _uiState.update {
+                    it.copy(
+                        events = events,
+                        isLoading = false,
+                        isRefreshing = false,
+                        error = null,
+                    )
                 }
-                .catch { e ->
-                    _uiState.update {
-                        it.copy(error = e, isLoading = false)
-                    }
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(error = "EventLogViewModel: " + e.message, isLoading = false)
                 }
-                .collect { eventsUI ->
-                    this@EventLogViewModel.events.addAll(eventsUI)
-                    _uiState.update {
-                        it.copy(
-                            events = this@EventLogViewModel.events,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
-                }
+            }
         }
     }
 
@@ -86,8 +87,11 @@ class EventLogViewModel(
     }
 
     fun refreshEvents() {
-        lastTimestamp = null
-        _uiState.update { EventLogUiState(isLoading = true) }
+        _uiState.update {
+            it.copy(isRefreshing = true, reachedEnd = false)
+        }
+        lastTimestamp = Instant.DISTANT_FUTURE
+        events.clear()
         loadEvents()
     }
 

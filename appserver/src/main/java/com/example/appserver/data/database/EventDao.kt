@@ -46,5 +46,5 @@ interface EventDao {
         ORDER BY timestamp DESC
         LIMIT :limit
     """)
-    fun getEventsFlow(lastTimestamp: Instant, limit: Int): Flow<List<Event>>
+    fun getEvents(lastTimestamp: Instant, limit: Int): List<Event>
 }
