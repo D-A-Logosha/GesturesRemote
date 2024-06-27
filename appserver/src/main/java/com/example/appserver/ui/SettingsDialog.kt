@@ -9,7 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,8 +23,8 @@ fun SettingsDialog(
     onSettingsConfirm: (String) -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    var port by remember { mutableStateOf(initialPort) }
-    var isPortValid by remember { mutableStateOf(ValidationUtils.isValidPort(port)) }
+    var port by rememberSaveable { mutableStateOf(initialPort) }
+    var isPortValid by rememberSaveable { mutableStateOf(ValidationUtils.isValidPort(port)) }
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
