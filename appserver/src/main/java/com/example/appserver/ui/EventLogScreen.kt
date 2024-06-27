@@ -4,18 +4,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -64,15 +68,38 @@ fun EventLogScreen(
             viewModel.loadEvents()
         }
     }
+    LaunchedEffect(
+        key1 = uiState.scrollMode == EventLogUiState.ScrollMode.AUTO,
+        key2 = uiState.events.firstOrNull()?.id
+    ) {
+        if (uiState.scrollMode == EventLogUiState.ScrollMode.AUTO) {
+            listState.animateScrollToItem(index = 0)
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = onBackClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Column(horizontalAlignment = Alignment.End) {
+                FloatingActionButton(
+                    onClick = { viewModel.toggleScrollMode() },
+                    containerColor = if (uiState.scrollMode == EventLogUiState.ScrollMode.AUTO) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        FloatingActionButtonDefaults.containerColor
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = "Auto scroll to new top"
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                FloatingActionButton(onClick = onBackClick) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
             }
-        },
-        modifier = Modifier.fillMaxSize()
+        }, modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -92,7 +119,8 @@ fun EventLogScreen(
                 }
             }
             PullToRefreshContainer(
-                state = pullRefreshState, modifier = Modifier.align(Alignment.TopCenter)
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
             )
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -102,9 +130,7 @@ fun EventLogScreen(
             LaunchedEffect(key1 = uiState.error) {
                 uiState.error?.let { error ->
                     launch {
-                        snackbarHostState.showSnackbar(
-                            message = error
-                        )
+                        snackbarHostState.showSnackbar(message = error)
                     }
                     viewModel.onErrorShown()
                 }
@@ -122,12 +148,10 @@ fun EventCard(event: EventLogUiState.EventUI) {
                 .padding(4.dp)
         ) {
             Text(
-                text = event.timestamp,
-                style = MaterialTheme.typography.labelSmall
+                text = event.timestamp, style = MaterialTheme.typography.labelSmall
             )
             Text(
-                text = "${event.eventType}",
-                style = MaterialTheme.typography.titleSmall
+                text = "${event.eventType}", style = MaterialTheme.typography.titleSmall
             )
             if (event.clientId != null) {
                 Text(
@@ -137,8 +161,7 @@ fun EventCard(event: EventLogUiState.EventUI) {
             }
             if (event.details != null) {
                 Text(
-                    text = "Details: ${event.details}",
-                    style = MaterialTheme.typography.bodySmall
+                    text = "Details: ${event.details}", style = MaterialTheme.typography.bodySmall
                 )
             }
         }
