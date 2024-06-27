@@ -59,7 +59,7 @@ fun EventLogScreen(
             listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
         }
     }
-    LaunchedEffect(key1 = indexLastVisibleItems) {
+    LaunchedEffect(key1 = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) {
         if (indexLastVisibleItems.value > uiState.events.size - 10 && !uiState.reachedEnd) {
             viewModel.loadEvents()
         }
@@ -86,7 +86,7 @@ fun EventLogScreen(
                 state = listState,
             ) {
                 if (!uiState.isLoading && !uiState.isRefreshing) {
-                    items(uiState.events) { event ->
+                    items(uiState.events, key = { it.id }) { event ->
                         EventCard(event = event)
                     }
                 }
