@@ -31,7 +31,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -58,13 +57,14 @@ fun EventLogScreen(
         if (!uiState.isRefreshing) pullRefreshState.endRefresh()
     }
 
-    val indexLastVisibleItems = remember {
-        derivedStateOf {
+    LaunchedEffect(
+        key1 = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0,
+        key2 = uiState.reachedEnd,
+        key3 = uiState.isLoading
+    ) {
+        val indexLastVisibleItems =
             listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-        }
-    }
-    LaunchedEffect(key1 = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) {
-        if (indexLastVisibleItems.value > uiState.events.size - 10 && !uiState.reachedEnd) {
+        if (indexLastVisibleItems > uiState.events.size - 10 && !uiState.reachedEnd && !uiState.isLoading) {
             viewModel.loadEvents()
         }
     }
