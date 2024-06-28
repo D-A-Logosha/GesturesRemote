@@ -1,6 +1,7 @@
 package com.example.appclient.domain.usecase
 
 import android.util.Log
+import com.example.appclient.BuildConfig
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.common.domain.GestureData
@@ -36,12 +37,12 @@ class ReceiveGestureUseCase(
                             try {
                                 val gestureData = GestureData.fromJson(event.message)
                                 _receivedGestureFlow.emit(gestureData)
-                                Log.d(
+                                if (BuildConfig.LOG_LVL>7) Log.d(
                                     "ReceiveGestureUseCase",
                                     "Received gesture: $gestureData"
                                 )
                             } catch (e: Exception) {
-                                Log.e(
+                                if (BuildConfig.LOG_LVL>3) Log.e(
                                     "ReceiveGestureUseCase",
                                     "Error decoding gesture data: ${e.message}",
                                     e

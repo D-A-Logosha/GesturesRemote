@@ -1,6 +1,7 @@
 package com.example.appserver.data.websocket
 
 import android.util.Log
+import com.example.appserver.BuildConfig
 import com.example.appserver.data.EventLogger
 import com.example.appserver.domain.EventType
 import io.ktor.server.application.install
@@ -80,7 +81,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                     throw Exception("Port $port is already in use")
                 }
                 server = embeddedServer(CIO, port = port.toInt()) {
-                    Log.d("ServerWebSocket", "try install WebSockets $port")
+                    if (BuildConfig.LOG_LVL>7) Log.d("ServerWebSocket", "try install WebSockets $port")
                     install(WebSockets) {
                         pingPeriod = Duration.ofSeconds(32)
                         timeout = Duration.ofSeconds(64)
@@ -90,7 +91,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                     _isConnected.update { true }
                     launch(Dispatchers.IO) {
                         val msg = "Server started"
-                        Log.d("ServerWebSocket", msg)
+                        if (BuildConfig.LOG_LVL>7) Log.d("ServerWebSocket", msg)
                         _eventsFlow.emit(ServerWebSocketEvent.ServerStarted(msg))
                     }
                     routing {
@@ -110,7 +111,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                                 incoming.consumeEach { frame ->
                                     if (frame is Frame.Text) {
                                         val text = frame.readText()
-                                        // Log.d("ServerWebSocket", "Received from $clientId: $text")
+                                        if (BuildConfig.LOG_LVL>8) Log.d("ServerWebSocket", "Received from $clientId: $text")
                                         if (text != "client message") _eventsFlow.emit(
                                                 ServerWebSocketEvent.MessageReceived(
                                                     clientId, text
@@ -122,7 +123,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                                 }
                             } catch (e: Exception) {
                                 val msg = "Error while receiving messages: ${e.message}"
-                                Log.e("ServerWebSocket", msg, e)
+                                if (BuildConfig.LOG_LVL>3) Log.e("ServerWebSocket", msg, e)
                                 _eventsFlow.emit(
                                     ServerWebSocketEvent.WebSocketError(
                                         clientId,
@@ -136,7 +137,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                                 _eventsFlow.emit(
                                     ServerWebSocketEvent.ClientDisconnected(clientId, reason)
                                 )
-                                Log.d(
+                                if (BuildConfig.LOG_LVL>7) Log.d(
                                     "ServerWebSocket",
                                     "Client disconnected: $clientId, reason: $reason"
                                 )
@@ -146,7 +147,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
                 }.start(wait = false)
             } catch (e: Exception) {
                 val msg = "Exception in ServerWebSocket: ${e.message}"
-                Log.e("ServerWebSocket", msg, e)
+                if (BuildConfig.LOG_LVL>3) Log.e("ServerWebSocket", msg, e)
                 _eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
                 this@KtorWebSocketServer.stop()
             }
@@ -166,16 +167,16 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
     override fun stop() {
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                Log.d("ServerWebSocket", "stopping")
+                if (BuildConfig.LOG_LVL>7) Log.d("ServerWebSocket", "stopping")
                 server?.stop(1000L, 3333L)
                 server = null
                 val msg = "Server stopped"
-                Log.d("ServerWebSocket", msg)
+                if (BuildConfig.LOG_LVL>7) Log.d("ServerWebSocket", msg)
                 _eventsFlow.emit(ServerWebSocketEvent.ServerStopped(msg))
 
             } catch (e: Exception) {
                 val msg = "Exception in stopping server: ${e.message}"
-                Log.e("ServerWebSocket", msg, e)
+                if (BuildConfig.LOG_LVL>3) Log.e("ServerWebSocket", msg, e)
                 _eventsFlow.emit(ServerWebSocketEvent.ServerError(Exception(msg)))
             } finally {
                 _isConnected.update { false }

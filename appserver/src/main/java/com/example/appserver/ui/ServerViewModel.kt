@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appserver.BuildConfig
 import com.example.appserver.data.EventLogger
 import com.example.appserver.data.websocket.ServerWebSocketEvent
 import com.example.appserver.data.websocket.WebSocketServer
@@ -61,7 +62,7 @@ class ServerViewModel(
                     is ServerWebSocketEvent.ServerStarted -> {
                         serverUiState = serverUiState.copy(serverState = ServerState.Running)
                         eventLogger.logServerEvent(EventType.ServerStarted)
-                        Log.d("ServerViewModel", event.message)
+                        if (BuildConfig.LOG_LVL>7) Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: $event.message")
                     }
 
@@ -71,7 +72,7 @@ class ServerViewModel(
                         useCaseManagers[event.clientId]?.start()
                         eventLogger.logClientEvent(event.clientId, EventType.ClientConnected)
                         val msg = "Client connected: ${event.clientId}"
-                        Log.d("ServerViewModel", msg)
+                        if (BuildConfig.LOG_LVL>7) Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
                     }
 
@@ -82,7 +83,7 @@ class ServerViewModel(
                             event.clientId, EventType.ClientDisconnected, event.reason
                         )
                         val msg = "Client disconnected: ${event.clientId}, reason: ${event.reason}"
-                        Log.d("ServerViewModel", msg)
+                        if (BuildConfig.LOG_LVL>7) Log.d("ServerViewModel", msg)
                         sendSnackbarMessage("Event: $msg")
                     }
 
@@ -91,7 +92,7 @@ class ServerViewModel(
                             event.clientId, EventType.MessageReceived, event.message
                         )
                         val msg = "Message received from ${event.clientId}: ${event.message}"
-                        Log.d("ServerViewModel", msg)
+                        if (BuildConfig.LOG_LVL>7) Log.d("ServerViewModel", msg)
                     }
 
                     is ServerWebSocketEvent.ServerStopped -> {
@@ -101,7 +102,7 @@ class ServerViewModel(
                         }
                         useCaseManagers.clear()
                         eventLogger.logServerEvent(EventType.ServerStopped)
-                        Log.d("ServerViewModel", event.message)
+                        if (BuildConfig.LOG_LVL>7) Log.d("ServerViewModel", event.message)
                         sendSnackbarMessage("Event: ${event.message}")
                     }
 
@@ -109,14 +110,14 @@ class ServerViewModel(
                         eventLogger.logClientEvent(
                             event.clientId, EventType.Error, event.error.message
                         )
-                        Log.e("ServerViewModel", "${event.clientId}: ${event.error.message}")
+                        if (BuildConfig.LOG_LVL>3) Log.e("ServerViewModel", "${event.clientId}: ${event.error.message}")
                         sendSnackbarMessage("Receive error:${event.clientId}: ${event.error.message}")
                     }
 
                     is ServerWebSocketEvent.ServerError -> {
                         serverUiState = serverUiState.copy(serverState = ServerState.Stopped)
                         eventLogger.logServerEvent(EventType.Error, event.error.message)
-                        Log.e("ServerViewModel", "${event.error.message}")
+                        if (BuildConfig.LOG_LVL>3) Log.e("ServerViewModel", "${event.error.message}")
                         sendSnackbarMessage("Error: ${event.error.message}")
                     }
                 }

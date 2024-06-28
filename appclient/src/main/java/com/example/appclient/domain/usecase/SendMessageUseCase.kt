@@ -1,6 +1,7 @@
 package com.example.appclient.domain.usecase
 
 import android.util.Log
+import com.example.appclient.BuildConfig
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.common.domain.Message
 import com.example.common.domain.PerformedGesture
@@ -58,9 +59,9 @@ class SendMessageUseCase(
                 try {
                     val message = messageBuilder(data)
                     webSocketClient.send(message)
-                    Log.d("SendMessageUseCase", "Sending message: $message")
+                    if (BuildConfig.LOG_LVL>7) Log.d("SendMessageUseCase", "Sending message: $message")
                 } catch (e: Exception) {
-                    Log.e("SendMessageUseCase", "Error sending message: ${e.message}", e)
+                    if (BuildConfig.LOG_LVL>3) Log.e("SendMessageUseCase", "Error sending message: ${e.message}", e)
                 }
             }
         }

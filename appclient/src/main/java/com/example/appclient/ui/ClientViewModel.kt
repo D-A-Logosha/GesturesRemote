@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appclient.BuildConfig
 import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.interfaces.GestureServiceManager
@@ -71,7 +72,7 @@ class ClientViewModel(
                 when (event) {
                     is ClientWebSocketEvent.Connected -> {
                         clientUiState = clientUiState.copy(clientState = ClientState.Started)
-                        Log.d("ClientViewModel", "Event: Connected to server")
+                        if (BuildConfig.LOG_LVL>7) Log.d("ClientViewModel", "Event: Connected to server")
                         sendSnackbarMessage("Event: Connected to server")
                         receiveGestureUseCase.start()
                         executeGestureUseCase.start(receiveGestureUseCase.receivedGestureFlow)
@@ -79,22 +80,21 @@ class ClientViewModel(
 
                     is ClientWebSocketEvent.Disconnected -> {
                         clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
-                        Log.d("ClientViewModel", "Event: Disconnected from server")
+                        if (BuildConfig.LOG_LVL>7) Log.d("ClientViewModel", "Event: Disconnected from server")
                         sendSnackbarMessage("Event: Disconnected from server")
                         receiveGestureUseCase.stop()
                         executeGestureUseCase.stop()
                     }
-
                     is ClientWebSocketEvent.Error -> {
                         clientUiState = clientUiState.copy(clientState = ClientState.Stopped)
-                        Log.e("ClientViewModel", "Event: WebSocket error: ${event.error}")
+                        if (BuildConfig.LOG_LVL>3) Log.e("ClientViewModel", "Event: WebSocket error: ${event.error}")
                         sendSnackbarMessage("Event: WebSocket error: ${event.error}")
                         receiveGestureUseCase.stop()
                         executeGestureUseCase.stop()
                     }
 
                     is ClientWebSocketEvent.MessageReceived -> {
-                        // Log.d("ClientViewModel", "Event: received: ${event.message}")
+                        if (BuildConfig.LOG_LVL>8) Log.d("ClientViewModel", "Event: received: ${event.message}")
                     }
                 }
             }

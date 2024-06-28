@@ -1,6 +1,7 @@
 package com.example.appserver.domain.usecase
 
 import android.util.Log
+import com.example.appserver.BuildConfig
 import com.example.appserver.data.websocket.ServerWebSocketEvent
 import com.example.appserver.data.websocket.WebSocketServer
 import com.example.appserver.domain.interfaces.ChromeSwipeAreaProviders
@@ -63,7 +64,7 @@ class ReceiveMessageUseCase(
                                             )
                                         _chromeSwipeArea.update { swipeArea() }
                                         _isProviderAvailable.update { true }
-                                        Log.d(
+                                        if (BuildConfig.LOG_LVL>7) Log.d(
                                             "ReceiveMessageUseCase",
                                             "Decoding SwipeArea: $swipeArea",
                                         )
@@ -72,21 +73,21 @@ class ReceiveMessageUseCase(
                                     "performedGesture" -> {
                                         val performedGesture =
                                             Json.decodeFromJsonElement<PerformedGesture>(message.data)
-                                        Log.d(
+                                        if (BuildConfig.LOG_LVL>7) Log.d(
                                             "ReceiveMessageUseCase",
                                             "Decoding PerformedGesture: $performedGesture"
                                         )
                                     }
 
                                     else -> {
-                                        Log.e(
+                                        if (BuildConfig.LOG_LVL>3) Log.e(
                                             "ReceiveMessageUseCase",
                                             "Unknown message type: ${event.message}",
                                         )
                                     }
                                 }
                             } catch (e: Exception) {
-                                Log.e(
+                                if (BuildConfig.LOG_LVL>3) Log.e(
                                     "ReceiveMessageUseCase",
                                     "Error decoding message: ${e.message}",
                                     e

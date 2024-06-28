@@ -1,6 +1,7 @@
 package com.example.appserver.domain.usecase
 
 import android.util.Log
+import com.example.appserver.BuildConfig
 import com.example.appserver.data.websocket.WebSocketServer
 import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
@@ -28,10 +29,10 @@ class SendMessageUseCase(
         job = viewModelScope.launch(Dispatchers.IO) {
             gestureDataFlow.collect { data ->
                 try {
-                    Log.d("SendMessageUseCase", "Sending message: ${data.toJson()}")
+                    if (BuildConfig.LOG_LVL>7) Log.d("SendMessageUseCase", "Sending message: ${data.toJson()}")
                     webSocketServer.send(clientId, data.toJson())
                 } catch (e: Exception) {
-                    Log.e("SendMessageUseCase", "Error sending message: ${e.message}", e)
+                    if (BuildConfig.LOG_LVL>3) Log.e("SendMessageUseCase", "Error sending message: ${e.message}", e)
                 }
             }
         }

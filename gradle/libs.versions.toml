@@ -9,6 +9,10 @@ roomKtx = "2.6.1"
 targetSdk = "34"
 compileSdk = "34"
 kotlinCompilerExtensionVersion = "1.5.10"
+# Set display level of log message. not display -> 0 ... 9 <- all message
+# level > 0.wtf 1.throwable 2.exepion 3.error 4.warning 5.assert 6.info 7.debug 8.chatter
+relaseLog = "0"
+debugLog = "8"
 # Dependencies versions
 agp = "8.5.0"
 kotlin = "1.9.22"

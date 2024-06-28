@@ -1,6 +1,7 @@
 package com.example.appserver.domain.usecase
 
 import android.util.Log
+import com.example.appserver.BuildConfig
 import com.example.common.domain.GestureData
 import com.example.common.domain.Point
 import com.example.common.domain.SwipeArea
@@ -35,7 +36,7 @@ class GenerateGestureDataUseCase(
             var isSwipeDown = true
             while (isActive) {
                 if (swipeAreaLocal.width() == 0 || swipeAreaLocal.height() == 0) {
-                    Log.d(
+                    if (BuildConfig.LOG_LVL>7) Log.d(
                         "GenerateGestureDataUseCase",
                         "swipe area is empty: $swipeAreaLocal"
                     )
@@ -59,7 +60,7 @@ class GenerateGestureDataUseCase(
                     )
                 }
                 _gestureFlow.emit(gestureData)
-                Log.d("GenerateGestureDataUseCase", "Generated gesture: $gestureData")
+                if (BuildConfig.LOG_LVL>7) Log.d("GenerateGestureDataUseCase", "Generated gesture: $gestureData")
                 isSwipeDown = !isSwipeDown
                 delay(Random.nextLong(2222, 4444))
             }

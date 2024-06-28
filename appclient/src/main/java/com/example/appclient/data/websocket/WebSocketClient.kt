@@ -1,15 +1,26 @@
 package com.example.appclient.data.websocket
 
 import android.util.Log
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.websocket.*
+import com.example.appclient.BuildConfig
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.CloseReason
+import io.ktor.websocket.Frame
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -53,7 +64,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                     port = port.toInt(),
                     path = "/echo",
                 ) {
-                    Log.d("ClientWebSocket", "Connected to server")
+                    if (BuildConfig.LOG_LVL>7) Log.d("ClientWebSocket", "Connected to server")
 
                     launch {
                         while (isActive) {
@@ -70,12 +81,12 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                         when (frame) {
                             is Frame.Text -> {
                                 val text = frame.readText()
-                                // Log.d("ClientWebSocket", "Received: $text")
+                                if (BuildConfig.LOG_LVL>8) Log.d("ClientWebSocket", "Received: $text")
                                 eventsFlow.emit(ClientWebSocketEvent.MessageReceived(message = text))
                             }
 
                             else -> {
-                                Log.d("ClientWebSocket", "Received non-text frame")
+                                if (BuildConfig.LOG_LVL>7) Log.d("ClientWebSocket", "Received non-text frame")
                             }
                         }
                     }
@@ -97,7 +108,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("ClientWebSocket", "Error during WebSocket connection: ${e.message}", e)
+                if (BuildConfig.LOG_LVL>3) Log.e("ClientWebSocket", "Error during WebSocket connection: ${e.message}", e)
                 eventsFlow.emit(ClientWebSocketEvent.Error(e))
             }
         }
@@ -115,7 +126,7 @@ class KtorWebSocketClient : WebSocketClient, KoinComponent {
                 )
                 webSocketSession = null
             } catch (e: Exception) {
-                Log.e("ClientWebSocket", "Error during WebSocket disconnect: ${e.message}", e)
+                if (BuildConfig.LOG_LVL>3) Log.e("ClientWebSocket", "Error during WebSocket disconnect: ${e.message}", e)
             } finally {
                 _isConnected.update { false }
                 eventsFlow.emit(ClientWebSocketEvent.Disconnected(message = "Disconnected from server"))

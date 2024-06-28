@@ -1,6 +1,7 @@
 package com.example.appclient.domain.usecase
 
 import android.util.Log
+import com.example.appclient.BuildConfig
 import com.example.appclient.domain.interfaces.GestureServiceManager
 import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
@@ -27,9 +28,9 @@ class ExecuteGestureUseCase(
             gestureDataFlow.collect { gestureData ->
                 try {
                     gestureServiceManager.performSwipe(gestureData)
-                    // Log.d("ExecuteGestureUseCase", "Executed gesture: $gestureData")
+                    if (BuildConfig.LOG_LVL>8) Log.d("ExecuteGestureUseCase", "Executed gesture: $gestureData")
                 } catch (e: Exception) {
-                    Log.e("ExecuteGestureUseCase", "Error executing gesture: ${e.message}", e)
+                    if (BuildConfig.LOG_LVL>3) Log.e("ExecuteGestureUseCase", "Error executing gesture: ${e.message}", e)
                 }
             }
         }

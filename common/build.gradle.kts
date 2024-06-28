@@ -17,6 +17,17 @@ android {
     }
 
     buildTypes {
+        buildFeatures {
+            buildConfig = true
+        }
+        buildTypes {
+            debug {
+                buildConfigField("Integer", "LOG_LVL", libs.versions.debugLog.get())
+            }
+            release {
+                buildConfigField("Integer", "LOG_LVL", libs.versions.relaseLog.get())
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

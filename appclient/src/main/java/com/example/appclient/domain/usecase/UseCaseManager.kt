@@ -1,6 +1,7 @@
 package com.example.appclient.domain.usecase
 
 import android.util.Log
+import com.example.appclient.BuildConfig
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.appclient.domain.interfaces.ChromeSwipeAreaProvider
 import com.example.appclient.domain.interfaces.GestureServiceManager
@@ -47,18 +48,18 @@ class UseCaseManager(
                     sendMessageUseCase.startSwipeArea(
                         chromeSwipeAreaProvider.chromeSwipeArea
                     )
-                    Log.d("UseCaseManager", "Send swipe area started")
+                    if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Send swipe area started")
                     sendMessageUseCase.startPerformedGesture(
                         performedGesturesProvider.performedGestures
                     )
-                    Log.d("UseCaseManager", "Send performed gestures started")
+                    if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Send performed gestures started")
                 } else {
                     sendMessageUseCase.stop(
                         chromeSwipeAreaProvider.chromeSwipeArea
                     )
-                    Log.d("UseCaseManager", "Send swipe area stopped")
+                    if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Send swipe area stopped")
                     sendMessageUseCase.stop(performedGesturesProvider.performedGestures)
-                    Log.d("UseCaseManager", "Send performed gestures stopped")
+                    if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Send performed gestures stopped")
                 }
             }
         }

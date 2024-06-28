@@ -1,6 +1,7 @@
 package com.example.appserver.domain.usecase
 
 import android.util.Log
+import com.example.appserver.BuildConfig
 import com.example.appserver.data.EventLogger
 import com.example.appserver.data.websocket.WebSocketServer
 import com.example.appserver.domain.EventType
@@ -41,10 +42,10 @@ class UseCaseManager(
                 webSocketServer.connectedClients.collect { connectedClients ->
                     if (connectedClients.contains(clientId)) {
                         receiveMessageUseCase.start()
-                        Log.d("UseCaseManager", "Receive messages started")
+                        if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Receive messages started")
                     } else {
                         receiveMessageUseCase.stop()
-                        Log.d("UseCaseManager", "Receive messages stopped")
+                        if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Receive messages stopped")
                     }
                 }
 

@@ -8,6 +8,7 @@ import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import com.example.appclient.BuildConfig
 import com.example.appclient.domain.interfaces.GestureServiceHandler
 import com.example.common.domain.GestureData
 import com.example.common.domain.GestureResult
@@ -42,7 +43,7 @@ class GestureAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        Log.d("Accessibility", "Accessibility: connected")
+        if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Accessibility: connected")
 
         findChromeNode()?.let { monitorChromeState(it) }
         gestureServiceHandler.onServiceState.update { true }
@@ -54,7 +55,7 @@ class GestureAccessibilityService : AccessibilityService() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        Log.d("Accessibility", "Accessibility: disconnected")
+        if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Accessibility: disconnected")
         gestureServiceHandler.onServiceState.update { false }
         swipeJob?.cancel()
         swipeJob = null
@@ -66,7 +67,7 @@ class GestureAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        // Log.d("Accessibility", "Event: ${event.eventType}, package: ${event.packageName}")
+        if (BuildConfig.LOG_LVL>9) Log.d("Accessibility", "Event: ${event.eventType}, package: ${event.packageName}")
 
         if (event.packageName?.toString() == "com.android.chrome") {
             when (event.eventType) {
@@ -84,11 +85,11 @@ class GestureAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Log.d("Accessibility", "Service interrupted")
+        if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Service interrupted")
     }
 
     private suspend fun performSwipe(gesture: GestureData) {
-        Log.d("Accessibility", "Gesture starting: $gesture")
+        if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Gesture starting: $gesture")
         val path = Path()
         path.moveTo(gesture.start.x.toFloat(), gesture.start.y.toFloat())
         path.lineTo(gesture.end.x.toFloat(), gesture.end.y.toFloat())
@@ -107,7 +108,7 @@ class GestureAccessibilityService : AccessibilityService() {
                         PerformedGesture(timestamp, gesture, GestureResult.Completed)
                     )
                 }
-                Log.d("Accessibility", "Gesture completed")
+                if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Gesture completed")
             }
 
             override fun onCancelled(gestureDescription: GestureDescription) {
@@ -117,7 +118,7 @@ class GestureAccessibilityService : AccessibilityService() {
                         PerformedGesture(timestamp, gesture, GestureResult.Completed)
                     )
                 }
-                Log.e("Accessibility", "Gesture cancelled")
+                if (BuildConfig.LOG_LVL>3) Log.e("Accessibility", "Gesture cancelled")
             }
         }, null)
 
@@ -125,7 +126,7 @@ class GestureAccessibilityService : AccessibilityService() {
             if (withTimeoutOrNull(gesture.duration + 999L) {
                     callbackChannel.receive()
                 } == null) {
-                Log.d("Accessibility", "Gesture timeout")
+                if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Gesture timeout")
                 gestureServiceHandler.onPerformedGestures.emit(
                     PerformedGesture(timestamp, gesture, GestureResult.TimeOut)
                 )
@@ -154,16 +155,16 @@ class GestureAccessibilityService : AccessibilityService() {
                         chromeNode.getBoundsInScreen(chromeBounds)
                         if (chromeSwipeArea != chromeBounds) {
                             chromeSwipeArea = chromeBounds
-                            Log.d("Accessibility", "Chrome area changed: $chromeSwipeArea}")
+                            if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "Chrome area changed: $chromeSwipeArea}")
                             gestureServiceHandler.onChromeSwipeArea.update { chromeSwipeArea }
                         }
                         if (isChromeVisibleToUser && isChromeFocused) {
                             if (swipeJob?.isActive != true) {
-                                Log.d("Accessibility", "monitorChromeJob start")
+                                if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "monitorChromeJob start")
                                 startSwipes()
                             }
                         } else swipeJob?.run {
-                            Log.d("Accessibility", "monitorChromeJob stop: chrome not visible")
+                            if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "monitorChromeJob stop: chrome not visible")
                             stopSwipes()
                             monitorChromeJob?.cancel()
                             monitorChromeJob = null
@@ -177,7 +178,7 @@ class GestureAccessibilityService : AccessibilityService() {
                     chromeSwipeArea = SwipeArea()
                     gestureServiceHandler.onChromeSwipeArea.update { chromeSwipeArea }
                     swipeJob?.run {
-                        Log.d("Accessibility", "monitorChromeJob stop: chromeNode not found")
+                        if (BuildConfig.LOG_LVL>7) Log.d("Accessibility", "monitorChromeJob stop: chromeNode not found")
                         stopSwipes()
                         monitorChromeJob?.cancel()
                         monitorChromeJob = null
@@ -196,10 +197,10 @@ class GestureAccessibilityService : AccessibilityService() {
         }
         try {
             applicationContext.startActivity(intent)
-            Log.d("ClientViewModel", "Open Chrome")
+            if (BuildConfig.LOG_LVL>7) Log.d("ClientViewModel", "Open Chrome")
             return true
         } catch (e: Exception) {
-            Log.e("ClientViewModel", "Chrome not found", e)
+            if (BuildConfig.LOG_LVL>3) Log.e("ClientViewModel", "Chrome not found", e)
             return false
         }
     }
