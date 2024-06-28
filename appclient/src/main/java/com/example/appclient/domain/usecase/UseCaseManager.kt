@@ -32,7 +32,9 @@ class UseCaseManager(
 
     private var job: Job? = null
 
+    @Synchronized
     fun start() {
+        job?.let { return }
         job = viewModelScope.launch(Dispatchers.IO) {
             combine(
                 performedGesturesProvider.isServiceEnabled,

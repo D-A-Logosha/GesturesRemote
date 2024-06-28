@@ -6,6 +6,7 @@ import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Factory
 import org.koin.core.component.KoinComponent
@@ -19,7 +20,9 @@ class ExecuteGestureUseCase(
 
     private var job: Job? = null
 
-    fun start(gestureDataFlow: kotlinx.coroutines.flow.SharedFlow<GestureData>) {
+    @Synchronized
+    fun start(gestureDataFlow: SharedFlow<GestureData>) {
+        job?.run { return }
         job = viewModelScope.launch(Dispatchers.IO) {
             gestureDataFlow.collect { gestureData ->
                 try {

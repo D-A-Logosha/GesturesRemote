@@ -59,7 +59,7 @@ class KtorWebSocketServer : WebSocketServer, KoinComponent {
 
     private val eventLogger: EventLogger by inject()
 
-    private var _eventsFlow = MutableSharedFlow<ServerWebSocketEvent>(replay = 0)
+    private var _eventsFlow = MutableSharedFlow<ServerWebSocketEvent>(replay = 1)
     override val eventsFlow = _eventsFlow.asSharedFlow()
 
     private val _isConnected = MutableStateFlow(false)

@@ -4,7 +4,7 @@ import android.util.Log
 import com.example.common.domain.GestureData
 import com.example.common.domain.Point
 import com.example.common.domain.SwipeArea
-import com.example.common.domain.copy
+import com.example.common.domain.shrink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,14 +27,10 @@ class GenerateGestureDataUseCase(
 
     private var swipeAreaLocal: SwipeArea = SwipeArea()
 
+    @Synchronized
     fun start(swipeArea: SwipeArea) {
-        swipeAreaLocal = swipeArea.copy(
-            top = (swipeArea.top+swipeArea.height()*0.2f).toInt(),
-            bottom = (swipeArea.bottom-swipeArea.height()*0.2f).toInt(),
-            left = (swipeArea.left+swipeArea.width()*0.2f).toInt(),
-            right = (swipeArea.right-swipeArea.width()*0.2f).toInt(),
-        )
-        if (job != null) return
+        swipeAreaLocal = swipeArea.shrink(0.2f)
+        job?.let { return }
         job = viewModelScope.launch(Dispatchers.IO) {
             var isSwipeDown = true
             while (isActive) {

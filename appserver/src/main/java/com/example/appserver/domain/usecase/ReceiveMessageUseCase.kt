@@ -10,6 +10,7 @@ import com.example.common.domain.PerformedGesture
 import com.example.common.domain.SerializableSwipeArea
 import com.example.common.domain.SwipeArea
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,8 +44,10 @@ class ReceiveMessageUseCase(
 
     private var job: Job? = null
 
+    @Synchronized
     fun start() {
-        job = useCaseScope.launch {
+        job?.let { return }
+        job = useCaseScope.launch(Dispatchers.IO) {
             webSocketServer.eventsFlow.collect { event ->
                 when (event) {
                     is ServerWebSocketEvent.MessageReceived -> {

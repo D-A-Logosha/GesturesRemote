@@ -33,7 +33,9 @@ class UseCaseManager(
     private val chromeSwipeAreaProvider = receiveMessageUseCase as ChromeSwipeAreaProviders
     private val performedGesturesProvider = receiveMessageUseCase as PerformedGesturesProviders
 
+    @Synchronized
     fun start() {
+        job?.let { return }
         job = useCaseScope.launch(Dispatchers.IO) {
             useCaseScope.launch(Dispatchers.IO) {
                 webSocketServer.connectedClients.collect { connectedClients ->
@@ -48,16 +50,14 @@ class UseCaseManager(
 
             }
             useCaseScope.launch(Dispatchers.IO) {
-                useCaseScope.launch(Dispatchers.IO) {
-                    chromeSwipeAreaProvider.isProviderAvailable.collect { isAvailable ->
-                        if (isAvailable) {
-                            sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
-                            chromeSwipeAreaProvider.chromeSwipeArea.collect { data ->
-                                generateGestureDataUseCase.start(data)
-                            }
-                        } else {
-                            generateGestureDataUseCase.stop()
+                chromeSwipeAreaProvider.isProviderAvailable.collect { isAvailable ->
+                    if (isAvailable) {
+                        sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
+                        chromeSwipeAreaProvider.chromeSwipeArea.collect { data ->
+                            generateGestureDataUseCase.start(data)
                         }
+                    } else {
+                        generateGestureDataUseCase.stop()
                     }
                 }
             }

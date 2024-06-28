@@ -26,6 +26,7 @@ class SendMessageUseCase(
 
     private var job: Job? = null
 
+    @Synchronized
     fun startSwipeArea(dataFlow: SharedFlow<SwipeArea>): Job {
         return returnJob(dataFlow) ?: run {
             startFlow(dataFlow) { data ->
@@ -34,6 +35,7 @@ class SendMessageUseCase(
         }
     }
 
+    @Synchronized
     fun startPerformedGesture(dataFlow: SharedFlow<PerformedGesture>): Job {
         return returnJob(dataFlow) ?: run {
             startFlow(dataFlow) { data ->

@@ -19,6 +19,7 @@ class SendMessageUseCase(
 
     private var jobMap: MutableMap<SharedFlow<GestureData>, Job?> = mutableMapOf()
 
+    @Synchronized
     fun start(gestureDataFlow: SharedFlow<GestureData>): Job {
         var job = jobMap[gestureDataFlow]
         if (job != null && job.isActive) {

@@ -5,6 +5,7 @@ import com.example.appclient.data.websocket.ClientWebSocketEvent
 import com.example.appclient.data.websocket.WebSocketClient
 import com.example.common.domain.GestureData
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,8 +25,10 @@ class ReceiveGestureUseCase(
     private val _receivedGestureFlow = MutableSharedFlow<GestureData>(replay = 0)
     val receivedGestureFlow = _receivedGestureFlow.asSharedFlow()
 
+    @Synchronized
     fun start() {
-        job = viewModelScope.launch {
+        job?.run { return }
+        job = viewModelScope.launch(Dispatchers.IO) {
             webSocketClient.eventsFlow.collect { event ->
                 when (event) {
                     is ClientWebSocketEvent.MessageReceived -> {
