@@ -18,7 +18,7 @@ import org.koin.core.component.KoinComponent
 import kotlin.random.Random
 
 class GenerateGestureDataUseCase(
-    private val viewModelScope: CoroutineScope,
+    private val useCaseScope: CoroutineScope,
 ) : KoinComponent {
 
     private val _gestureFlow = MutableSharedFlow<GestureData>(replay = 0)
@@ -30,14 +30,15 @@ class GenerateGestureDataUseCase(
 
     @Synchronized
     fun start(swipeArea: SwipeArea) {
+        if (BuildConfig.LOG_LVL>8) Log.d("GGD.UseCase","Starting: $swipeArea")
         swipeAreaLocal = swipeArea.shrink(0.2f)
         job?.let { return }
-        job = viewModelScope.launch(Dispatchers.IO) {
+        job = useCaseScope.launch(Dispatchers.IO) {
             var isSwipeDown = true
             while (isActive) {
                 if (swipeAreaLocal.width() == 0 || swipeAreaLocal.height() == 0) {
                     if (BuildConfig.LOG_LVL>7) Log.d(
-                        "GenerateGestureDataUseCase",
+                        "GGD.UseCase",
                         "swipe area is empty: $swipeAreaLocal"
                     )
                     delay(2222L)
@@ -60,15 +61,17 @@ class GenerateGestureDataUseCase(
                     )
                 }
                 _gestureFlow.emit(gestureData)
-                if (BuildConfig.LOG_LVL>7) Log.d("GenerateGestureDataUseCase", "Generated gesture: $gestureData")
+                if (BuildConfig.LOG_LVL>7) Log.d("GGD.UseCase", "Generated gesture: $gestureData")
                 isSwipeDown = !isSwipeDown
                 delay(Random.nextLong(2222, 4444))
             }
         }
+        if (BuildConfig.LOG_LVL>8) Log.d("GGD.UseCase","Started")
     }
 
     fun stop() {
         job?.cancel()
         job = null
+        if (BuildConfig.LOG_LVL>8) Log.d("GGD.UseCase","Stopped")
     }
 }

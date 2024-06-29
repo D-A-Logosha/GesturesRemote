@@ -36,42 +36,34 @@ class UseCaseManager(
 
     @Synchronized
     fun start() {
+        if (BuildConfig.LOG_LVL > 8) Log.d("UseCaseManager", "Try starting: $clientId")
         job?.let { return }
         job = useCaseScope.launch(Dispatchers.IO) {
-            useCaseScope.launch(Dispatchers.IO) {
-                webSocketServer.connectedClients.collect { connectedClients ->
-                    if (connectedClients.contains(clientId)) {
-                        receiveMessageUseCase.start()
-                        if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Receive messages started")
-                    } else {
-                        receiveMessageUseCase.stop()
-                        if (BuildConfig.LOG_LVL>7) Log.d("UseCaseManager", "Receive messages stopped")
+            receiveMessageUseCase.start()
+            chromeSwipeAreaProvider.isProviderAvailable.collect { isAvailable ->
+                if (isAvailable) {
+                    sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
+                    chromeSwipeAreaProvider.chromeSwipeArea.collect { data ->
+                        generateGestureDataUseCase.start(data)
                     }
-                }
-
-            }
-            useCaseScope.launch(Dispatchers.IO) {
-                chromeSwipeAreaProvider.isProviderAvailable.collect { isAvailable ->
-                    if (isAvailable) {
-                        sendMessageUseCase.start(generateGestureDataUseCase.gestureFlow)
-                        chromeSwipeAreaProvider.chromeSwipeArea.collect { data ->
-                            generateGestureDataUseCase.start(data)
-                        }
-                    } else {
-                        generateGestureDataUseCase.stop()
-                    }
+                } else {
+                    generateGestureDataUseCase.stop()
                 }
             }
         }
         eventLogger.logUseCaseManagerEvent(clientId, EventType.ManagerStarted)
+        if (BuildConfig.LOG_LVL > 8) Log.d("UseCaseManager", "Started: $clientId")
     }
 
     fun stop() {
+        if (BuildConfig.LOG_LVL > 8) Log.d("UseCaseManager", "Stopping: $clientId")
         receiveMessageUseCase.stop()
         generateGestureDataUseCase.stop()
         sendMessageUseCase.stop()
         job?.cancel()
         job = null
         eventLogger.logUseCaseManagerEvent(clientId, EventType.ManagerStopped)
+        if (BuildConfig.LOG_LVL > 8) Log.d("UseCaseManager", "Stopped: $clientId")
+
     }
 }

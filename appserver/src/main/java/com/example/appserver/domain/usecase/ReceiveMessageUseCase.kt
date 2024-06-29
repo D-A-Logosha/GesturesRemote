@@ -47,6 +47,7 @@ class ReceiveMessageUseCase(
 
     @Synchronized
     fun start() {
+        if (BuildConfig.LOG_LVL > 8) Log.d("RM.UseCase", "Try starting: $clientId")
         job?.let { return }
         job = useCaseScope.launch(Dispatchers.IO) {
             webSocketServer.eventsFlow.collect { event ->
@@ -64,33 +65,31 @@ class ReceiveMessageUseCase(
                                             )
                                         _chromeSwipeArea.update { swipeArea() }
                                         _isProviderAvailable.update { true }
-                                        if (BuildConfig.LOG_LVL>7) Log.d(
-                                            "ReceiveMessageUseCase",
-                                            "Decoding SwipeArea: $swipeArea",
+                                        if (BuildConfig.LOG_LVL > 7) Log.d(
+                                            "RM.UseCase",
+                                            "Decoding SwipeArea:$clientId: $swipeArea",
                                         )
                                     }
 
                                     "performedGesture" -> {
                                         val performedGesture =
                                             Json.decodeFromJsonElement<PerformedGesture>(message.data)
-                                        if (BuildConfig.LOG_LVL>7) Log.d(
-                                            "ReceiveMessageUseCase",
-                                            "Decoding PerformedGesture: $performedGesture"
+                                        if (BuildConfig.LOG_LVL > 7) Log.d(
+                                            "RM.UseCase",
+                                            "Decoding PerformedGesture:$clientId: $performedGesture"
                                         )
                                     }
 
                                     else -> {
-                                        if (BuildConfig.LOG_LVL>3) Log.e(
-                                            "ReceiveMessageUseCase",
-                                            "Unknown message type: ${event.message}",
+                                        if (BuildConfig.LOG_LVL > 3) Log.e(
+                                            "RM.UseCase",
+                                            "Unknown message type:$clientId: ${event.message}",
                                         )
                                     }
                                 }
                             } catch (e: Exception) {
-                                if (BuildConfig.LOG_LVL>3) Log.e(
-                                    "ReceiveMessageUseCase",
-                                    "Error decoding message: ${e.message}",
-                                    e
+                                if (BuildConfig.LOG_LVL > 3) Log.e(
+                                    "RM.UseCase", "Error decoding message:$clientId: ${e.message}", e
                                 )
                             }
                         }
@@ -100,10 +99,12 @@ class ReceiveMessageUseCase(
                 }
             }
         }
+        if (BuildConfig.LOG_LVL > 8) Log.d("RM.UseCase", "Started: $clientId")
     }
 
     fun stop() {
         job?.cancel()
         job = null
+        if (BuildConfig.LOG_LVL > 8) Log.d("RM.UseCase", "Stopped: $clientId")
     }
 }
