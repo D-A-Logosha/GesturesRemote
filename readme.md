@@ -18,3 +18,7 @@
 4. Использование DI решений.
 5. Отсутствие закомментированного кода.
 6. Разделение сервисов на слои.
+
+
+[DemoGesturesRemote.webm](https://github.com/D-A-Logosha/GesturesRemote/assets/169816988/c381938e-d3c4-4ec7-95cc-7c160c7c8c83)
+
