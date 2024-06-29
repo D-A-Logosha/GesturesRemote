@@ -52,6 +52,8 @@ class EventLogViewModel(
     private val events = mutableStateListOf<EventUI>()
     private var lastTimestamp: Instant = Instant.DISTANT_FUTURE
     private val pageSize = 10
+    private var sameEvents = 0
+
     private val pageSizeForNew = 1
 
     private var loadNewEventsJob: Job? = null
@@ -81,8 +83,9 @@ class EventLogViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 mutexUpdateEvents.withLock {
+                    val limit = pageSize + sameEvents
                     val newEvents = eventDao.getEvents(
-                        lastTimestamp = lastTimestamp, limit = pageSize
+                        lastTimestamp = lastTimestamp, limit = limit
                     )
                     val newEventsUI = newEvents.map { formatEventUI(it) }
                     newEvents.lastOrNull()?.let {
@@ -94,14 +97,20 @@ class EventLogViewModel(
                             loadNewEvents()
                         }
                     }
-                    withContext(Dispatchers.Main) { events.addAll(newEventsUI) }
+                    sameEvents = 0
+                    withContext(Dispatchers.Main) {
+                        newEventsUI.forEach {
+                            if (events.contains(it)) sameEvents++
+                            else events.add(it)
+                        }
+                    }
                     _uiState.update {
                         it.copy(
                             events = events,
                             isLoading = false,
                             isRefreshing = false,
                             error = null,
-                            reachedEnd = newEvents.size < pageSize
+                            reachedEnd = newEvents.size < limit
                         )
                     }
                 }
@@ -117,16 +126,23 @@ class EventLogViewModel(
         loadNewEventsJob?.let { return }
         loadNewEventsJob = viewModelScope.launch(Dispatchers.IO) {
             runCatching {
+                var sameNewEvents = 0
                 while (isActive) {
                     if (_uiState.value.scrollMode == EventLogUiState.ScrollMode.AUTO) {
                         delay(99)
                         mutexUpdateEvents.withLock {
-                            val newEvents = eventDao.getNewEvents(newestTimestamp, pageSizeForNew)
+                            val newEvents = eventDao.getNewEvents(
+                                newestTimestamp, pageSizeForNew + sameNewEvents
+                            )
                             if (newEvents.isNotEmpty()) {
                                 newestTimestamp = newEvents.last().timestamp
                                 val newEventsUI = newEvents.map { formatEventUI(it) }
+                                sameNewEvents = 0
                                 withContext(Dispatchers.Main) {
-                                    newEventsUI.forEach { events.add(0, it) }
+                                    newEventsUI.forEach {
+                                        if (events.contains(it)) sameNewEvents++
+                                        else events.add(0, it)
+                                    }
                                 }
                                 _uiState.update {
                                     it.copy(
@@ -149,14 +165,13 @@ class EventLogViewModel(
         }
     }
 
-    private fun formatEventUI(event: Event) =
-        EventUI(
-            id = formatID(event),
-            timestamp = formatInstant(event.timestamp),
-            eventType = event.eventType,
-            clientId = event.clientId,
-            details = event.details
-        )
+    private fun formatEventUI(event: Event) = EventUI(
+        id = formatID(event),
+        timestamp = formatInstant(event.timestamp),
+        eventType = event.eventType,
+        clientId = event.clientId,
+        details = event.details
+    )
 
     private fun formatID(event: Event) = event.id * EventType.entries.size + event.eventType.ordinal
 

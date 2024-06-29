@@ -41,7 +41,7 @@ interface EventDao {
             SELECT id, timestamp, event_type as eventType, client_id as clientId, details
             FROM client_events
         )
-        WHERE timestamp < :lastTimestamp
+        WHERE timestamp <= :lastTimestamp
         ORDER BY timestamp DESC
         LIMIT :limit
     """)
@@ -59,7 +59,7 @@ interface EventDao {
             SELECT id, timestamp, event_type as eventType, client_id as clientId, details
             FROM client_events
         )
-    WHERE timestamp > :newestTimestamp
+    WHERE timestamp >= :newestTimestamp
     ORDER BY timestamp ASC
     LIMIT :limit
 """
